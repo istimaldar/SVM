@@ -109,11 +109,11 @@ class SVM:
         for i in range(len(X)):
             temp = []
             for j in range(len(X)):
-                print(str(Y[i]) + "*" + str(Y[j]) + "*" + str(self.kernel(X[i], X[j], *params)))
-                temp.append(Y[i] * Y[j] * self.kernel(X[i], X[j], *params))
+                data = Y[i] * Y[j] * self.kernel(X[i], X[j], *params)
+                temp.append(data)
             self.matrix.append(temp)
 
 
 if __name__ == "__main__":
-    svm = SVM(POLYNOMIAL, [1, 1, 2], [[2, 3], [1, 5]], [4, 2])
+    svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1])
     print(svm.matrix)

@@ -1,4 +1,7 @@
 from math import exp
+LINEAR = "linear"
+POLYNOMIAL = "polynomial"
+GAUSSIAN = "gaussian"
 
 
 class SVM:
@@ -7,8 +10,8 @@ class SVM:
         if len(X) != len(Y):
             raise ValueError("X and Y should be the same size")
         result = 0
-        for x, y in X, Y:
-            result += x * y
+        for i in range(len(X)):
+            result += X[i] * Y[i]
         return result
 
     @staticmethod
@@ -46,7 +49,7 @@ class SVM:
         return result
 
     @staticmethod
-    def cramer_matrix(X, j):
+    def crammer_matrix(X, j):
         assert X, list
         for x in X:
             assert x, list
@@ -61,25 +64,37 @@ class SVM:
         return result
 
     @staticmethod
-    def cramer_main_matrix(X):
+    def crammer_main_matrix(X):
+        assert X, list
+        for x in X:
+            assert x, list
+            if len(x) != len(X) + 1:
+                raise ValueError("Wrong matrix size")
         return [x[:-1] for x in X]
 
     @staticmethod
+    def solve_crammer(X):
+        main = SVM.crammer_main_matrix(X)
+        result = []
+        for i in range(len(X)):
+            result.append(SVM.determinant(SVM.crammer_matrix(X, i)) / SVM.determinant(main))
+        return result
+
+    @classmethod
     def linear_kernel(X, Y, c=0):
         return SVM.multiply_vector(X, Y) + c
 
-    @staticmethod
+    @classmethod
     def polynomial_kernel(X, Y, c=0, alpha=0, d=2):
-        X = [alpha * x for x in X]
-        return (SVM.multiply_vector(X, Y) + c) ** d
+        return (SVM.multiply_vector([alpha * x for x in X], Y) + c) ** d
 
-    @staticmethod
+    @classmethod
     def gaussian_kernel(X, Y, sigma=1):
         return exp(-(SVM.euclidean_distance(X, Y) ** 2) / (2 * (sigma ** 2)))
 
     kernel_types = {"linear": linear_kernel, "polynomial": polynomial_kernel, "gaussian": gaussian_kernel}
 
-    def __init__(self, kernel_type, X, Y):
+    def __init__(self, kernel_type, params, X, Y):
         assert X, list
         for x in X:
             assert x, list
@@ -88,7 +103,17 @@ class SVM:
             assert y, list
         if len(X) != len(Y):
             raise ValueError("X and Y should be the same size")
+        self.kernel = SVM.kernel_types[kernel_type].__func__
+        print(self.kernel)
+        self.matrix = []
+        for i in range(len(X)):
+            temp = []
+            for j in range(len(X)):
+                print(str(Y[i]) + "*" + str(Y[j]) + "*" + str(self.kernel(X[i], X[j], *params)))
+                temp.append(Y[i] * Y[j] * self.kernel(X[i], X[j], *params))
+            self.matrix.append(temp)
 
 
 if __name__ == "__main__":
-    print(SVM.cramer_matrix([[1, 2, -3, 0], [3, 2, -1, 0], [4, 2, -1, 1]], 0))
+    svm = SVM(POLYNOMIAL, [1, 1, 2], [[2, 3], [1, 5]], [4, 2])
+    print(svm.matrix)

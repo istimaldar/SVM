@@ -76,8 +76,11 @@ class SVM:
     def solve_crammer(X):
         main = SVM.crammer_main_matrix(X)
         result = []
+        determinant = SVM.determinant(main)
+        if determinant == 0:
+            raise ZeroDivisionError
         for i in range(len(X)):
-            result.append(SVM.determinant(SVM.crammer_matrix(X, i)) / SVM.determinant(main))
+            result.append(SVM.determinant(SVM.crammer_matrix(X, i)) / determinant)
         return result
 
     @classmethod
@@ -94,7 +97,7 @@ class SVM:
 
     kernel_types = {"linear": linear_kernel, "polynomial": polynomial_kernel, "gaussian": gaussian_kernel}
 
-    def __init__(self, kernel_type, params, X, Y):
+    def __init__(self, kernel_type, params, X, Y, c):
         assert X, list
         for x in X:
             assert x, list
@@ -104,16 +107,80 @@ class SVM:
         if len(X) != len(Y):
             raise ValueError("X and Y should be the same size")
         self.kernel = SVM.kernel_types[kernel_type].__func__
-        print(self.kernel)
+        self.c = c
         self.matrix = []
         for i in range(len(X)):
-            temp = []
+            alpha = {}
             for j in range(len(X)):
                 data = Y[i] * Y[j] * self.kernel(X[i], X[j], *params)
-                temp.append(data)
-            self.matrix.append(temp)
+                alpha[j] = data
+            h = {0: Y[i]}
+            for j in range(1, 2 * len(X) + 1):
+                if j == i * 2 + 1:
+                    h[j] = -1
+                elif j == i * 2 + 2:
+                    h[j] = 1
+                else:
+                    h[j] = 0
+            result = 1
+            self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
+        alpha = {n: d for n, d in enumerate(Y)}
+        h = {n: 0 for n in range(len(X) * 2 + 1)}
+        result = 0
+        self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
+        self.results = []
+        self.form_crammer_matrix(self.matrix, 0, self.results)
+
+    def form_crammer_matrix(self, matrix, order, results):
+        # assert results, list
+        if len(matrix[0]["alpha"]) + len(matrix[0]["h"]) == len(matrix):
+            crammer_matrix = []
+            for equation in matrix:
+                matrix_line = []
+                for coefficient in sorted(equation["alpha"]):
+                    matrix_line.append(equation["alpha"][coefficient])
+                for coefficient in sorted(equation["h"]):
+                    matrix_line.append(equation["h"][coefficient])
+                matrix_line.append(equation["result"])
+                crammer_matrix.append(matrix_line)
+            try:
+                answers = SVM.solve_crammer(crammer_matrix)
+            except ZeroDivisionError:
+                return
+            result = {}
+            for key in matrix[0]["answer"]:
+                result[key] = matrix[0]["answer"][key]
+            for key in sorted(matrix[0]["alpha"]):
+                result["alpha"][key] = answers.pop(0)
+            for key in sorted(matrix[0]["h"]):
+                result["h"][key] = answers.pop(0)
+            results.append(result)
+            return
+        modified = matrix[:]
+        for equation in modified:
+            equation["alpha"].pop(order, None)
+            equation["answer"]["alpha"][order] = 0
+            equation["h"].pop(2 * order + 2, None)
+            equation["answer"]["h"][2 * order + 2] = 0
+        self.form_crammer_matrix(modified, order + 1, results)
+        modified = matrix[:]
+        for equation in modified:
+            equation["alpha"].pop(order, None)
+            equation["answer"]["alpha"][order] = self.c
+            equation["result"] -= self.c
+            equation["h"].pop(2 * order + 1, None)
+            equation["answer"]["h"][2 * order + 1] = 0
+        self.form_crammer_matrix(modified, order + 1, results)
+        modified = matrix[:]
+        for equation in modified:
+            equation["h"].pop(2 * order + 1, None)
+            equation["answer"]["h"][2 * order + 1] = 0
+            equation["h"].pop(2 * order + 2, None)
+            equation["answer"]["h"][2 * order + 2] = 0
+        self.form_crammer_matrix(modified, order + 1, results)
 
 
 if __name__ == "__main__":
-    svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1])
-    print(svm.matrix)
+    svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 4)
+    for line in svm.matrix:
+        print(len(line["h"]))

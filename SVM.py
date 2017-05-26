@@ -1,3 +1,4 @@
+import copy
 from math import exp
 LINEAR = "linear"
 POLYNOMIAL = "polynomial"
@@ -64,7 +65,7 @@ class SVM:
         return result
 
     @staticmethod
-    def crammer_main_matrix(X):
+    def crammer_main_matrix(X, *p):
         assert X, list
         for x in X:
             assert x, list
@@ -84,15 +85,15 @@ class SVM:
         return result
 
     @classmethod
-    def linear_kernel(X, Y, c=0):
+    def linear_kernel(X, Y, c=0, *p):
         return SVM.multiply_vector(X, Y) + c
 
     @classmethod
-    def polynomial_kernel(X, Y, c=0, alpha=0, d=2):
+    def polynomial_kernel(X, Y, c=0, alpha=0, d=2, *p):
         return (SVM.multiply_vector([alpha * x for x in X], Y) + c) ** d
 
     @classmethod
-    def gaussian_kernel(X, Y, sigma=1):
+    def gaussian_kernel(X, Y, sigma=1, *p):
         return exp(-(SVM.euclidean_distance(X, Y) ** 2) / (2 * (sigma ** 2)))
 
     kernel_types = {"linear": linear_kernel, "polynomial": polynomial_kernel, "gaussian": gaussian_kernel}
@@ -106,6 +107,9 @@ class SVM:
             assert y, list
         if len(X) != len(Y):
             raise ValueError("X and Y should be the same size")
+        self.X = X
+        self.Y = Y
+        self.params = params
         self.kernel = SVM.kernel_types[kernel_type].__func__
         self.c = c
         self.matrix = []
@@ -127,13 +131,16 @@ class SVM:
         alpha = {n: d for n, d in enumerate(Y)}
         h = {n: 0 for n in range(len(X) * 2 + 1)}
         result = 0
+        self.weight_vector = []
         self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
         self.results = []
-        self.form_crammer_matrix(self.matrix, 0, self.results)
+        self.find_extremums(self.matrix, 0, self.results)
+        self.format_results()
+        self.calculate()
+        self.find_max()
 
-    def form_crammer_matrix(self, matrix, order, results):
-        # assert results, list
-        if len(matrix[0]["alpha"]) + len(matrix[0]["h"]) == len(matrix):
+    def find_extremums(self, matrix, order, results):
+        if len(matrix[0]["alpha"]) + len(matrix[0]["h"]) <= len(matrix):
             crammer_matrix = []
             for equation in matrix:
                 matrix_line = []
@@ -154,33 +161,70 @@ class SVM:
                 result["alpha"][key] = answers.pop(0)
             for key in sorted(matrix[0]["h"]):
                 result["h"][key] = answers.pop(0)
+            for h in result["h"]:
+                if result["h"][h] < 0:
+                    return
+            for alpha in result["alpha"]:
+                if result["alpha"][alpha] < 0 or result["alpha"][alpha] > self.c:
+                    return
             results.append(result)
             return
-        modified = matrix[:]
+        modified = copy.deepcopy(matrix[:])
         for equation in modified:
             equation["alpha"].pop(order, None)
             equation["answer"]["alpha"][order] = 0
             equation["h"].pop(2 * order + 2, None)
             equation["answer"]["h"][2 * order + 2] = 0
-        self.form_crammer_matrix(modified, order + 1, results)
-        modified = matrix[:]
+        self.find_extremums(modified, order + 1, results)
+        modified = copy.deepcopy(matrix[:])
         for equation in modified:
             equation["alpha"].pop(order, None)
             equation["answer"]["alpha"][order] = self.c
             equation["result"] -= self.c
             equation["h"].pop(2 * order + 1, None)
             equation["answer"]["h"][2 * order + 1] = 0
-        self.form_crammer_matrix(modified, order + 1, results)
-        modified = matrix[:]
+        self.find_extremums(modified, order + 1, results)
+        modified = copy.deepcopy(matrix[:])
         for equation in modified:
             equation["h"].pop(2 * order + 1, None)
             equation["answer"]["h"][2 * order + 1] = 0
             equation["h"].pop(2 * order + 2, None)
             equation["answer"]["h"][2 * order + 2] = 0
-        self.form_crammer_matrix(modified, order + 1, results)
+        self.find_extremums(modified, order + 1, results)
 
+    def format_results(self):
+        new_results = []
+        for result in self.results:
+            new_result = []
+            for value in sorted(result["alpha"]):
+                new_result.append(result["alpha"][value])
+            new_results.append(new_result)
+        self.results = new_results
+
+    def calculate(self):
+        new_results = []
+        for result in self.results:
+            value = 0
+            for alpha in result:
+                value += alpha
+            for i in range(len(result)):
+                for j in range(len(result)):
+                    value += result[i] * result[j] * self.Y[i] * self.Y[j] * self.kernel(self.X[i], self.X[j], *self.params)
+            new_results.append((result, value))
+        self.results = new_results
+
+    def find_max(self):
+        if len(self.results) == 0:
+            return []
+        max_val = (self.results[0][0], self.results[0][1])
+        for result in self.results:
+            if result[1] > max_val[1]:
+                max_val = (result[0], result[1])
+        self.results = max_val[0]
+
+    def build_coefficients(self):
+        self.weight_vector
 
 if __name__ == "__main__":
-    svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 4)
-    for line in svm.matrix:
-        print(len(line["h"]))
+    svm = SVM(GAUSSIAN, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 333333 )
+    print(svm.results)

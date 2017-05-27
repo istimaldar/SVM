@@ -98,7 +98,7 @@ class SVM:
 
     kernel_types = {"linear": linear_kernel, "polynomial": polynomial_kernel, "gaussian": gaussian_kernel}
 
-    def __init__(self, kernel_type, params, X, Y, c):
+    def __init__(self, kernel_type, params, X, Y, c, crutch=True):
         assert X, list
         for x in X:
             assert x, list
@@ -128,16 +128,30 @@ class SVM:
                     h[j] = 0
             result = 1
             self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
-        alpha = {n: d for n, d in enumerate(Y)}
-        h = {n: 0 for n in range(len(X) * 2 + 1)}
-        result = 0
-        self.weight_vector = []
-        self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
+        if not crutch:
+            alpha = {n: d for n, d in enumerate(Y)}
+            h = {n: 0 for n in range(len(X) * 2 + 1)}
+            result = 0
+            self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
         self.results = []
-        self.find_extremums(self.matrix, 0, self.results)
-        self.format_results()
-        self.calculate()
-        self.find_max()
+        if crutch:
+            self.minimize_lagrange()
+        else:
+            self.find_extremums(self.matrix, 0, self.results)
+            self.format_results()
+            self.calculate()
+            self.find_max()
+
+    def minimize_lagrange(self):
+        crammer_matrix = []
+        for equasion in self.matrix:
+            crammer_line = []
+            for value in sorted(equasion["alpha"]):
+                crammer_line.append(equasion["alpha"][value])
+            crammer_line.append(equasion["result"])
+            crammer_matrix.append(crammer_line)
+        print(len(crammer_matrix))
+        self.results = SVM.solve_crammer(crammer_matrix)
 
     def find_extremums(self, matrix, order, results):
         if len(matrix[0]["alpha"]) + len(matrix[0]["h"]) <= len(matrix):
@@ -226,8 +240,11 @@ class SVM:
         result = 0
         for i in range(len(self.results)):
             result += self.results[i] * self.Y[i] * self.kernel(self.X[i], vector, *self.params)
-        return result
+        if result < 0:
+            return -1
+        return 1
 
 if __name__ == "__main__":
-    svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, 0], [1, 0]], [1, -1], 1)
-    print(svm.classify([1, 1]))
+    svm = SVM(POLYNOMIAL, [1, 1, 2], [[1, 1, 1], [0, 0, 0], [0, 0, 1], [0, 1, 0], [1, 1, 0]], [1, -1, -1, -1, -1], 5555)
+    print(svm.results)
+    print(svm.classify([1, 0, 0]))

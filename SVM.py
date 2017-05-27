@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 LINEAR = "linear"
 POLYNOMIAL = "polynomial"
 GAUSSIAN = "gaussian"
+EXPONENTIAL = "exponential"
+LAPLICAN = "laplacian"
 
 
 class SVM:
@@ -85,19 +87,28 @@ class SVM:
             result.append(SVM.determinant(SVM.crammer_matrix(X, i)) / determinant)
         return result
 
-    @classmethod
+    @staticmethod
     def linear_kernel(X, Y, c=0, *p):
         return SVM.multiply_vector(X, Y) + c
 
-    @classmethod
+    @staticmethod
     def polynomial_kernel(X, Y, c=0, alpha=0, d=2, *p):
         return (SVM.multiply_vector([alpha * x for x in X], Y) + c) ** d
 
-    @classmethod
+    @staticmethod
     def gaussian_kernel(X, Y, sigma=1, *p):
         return exp(-(SVM.euclidean_distance(X, Y) ** 2) / (2 * (sigma ** 2)))
 
-    kernel_types = {"linear": linear_kernel, "polynomial": polynomial_kernel, "gaussian": gaussian_kernel}
+    @staticmethod
+    def exponential_kernel(X, Y, sigma=1, *p):
+        return exp(-(SVM.euclidean_distance(X, Y)) / (2 * (sigma ** 2)))
+
+    @staticmethod
+    def laplacian_kernel(X, Y, sigma, *p):
+        return exp(-(SVM.euclidean_distance(X, Y)) / sigma)
+
+    kernel_types = {"linear": linear_kernel, "polynomial": polynomial_kernel, "gaussian": gaussian_kernel,
+                    "exponential": exponential_kernel, "laplacian": laplacian_kernel}
 
     def __init__(self, kernel_type, params, X, Y, c, crutch=True):
         assert X, list
@@ -274,6 +285,6 @@ class SVM:
 
 
 if __name__ == "__main__":
-    svm = SVM(POLYNOMIAL, [1, 1, 2], [[1, -1], [0, 0]], [1, -1], 5555)
+    svm = SVM(LINEAR, [1, 1, 2], [[1, -1], [0, 0]], [1, -1], 5555)
     print(svm.classify([1, 1]))
     svm.draw_plots()

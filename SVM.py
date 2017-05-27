@@ -225,8 +225,9 @@ class SVM:
     def classify(self, vector):
         result = 0
         for i in range(len(self.results)):
-            result += self.results[i] * self.kernel(self.X[i], vector, *self.params)
+            result += self.results[i] * self.Y[i] * self.kernel(self.X[i], vector, *self.params)
         return result
 
 if __name__ == "__main__":
-    svm = SVM(GAUSSIAN, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [1, 1, 1, -1], 3)
+    svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, 0], [1, 0]], [1, -1], 1)
+    print(svm.classify([1, 1]))

@@ -222,9 +222,11 @@ class SVM:
                 max_val = (result[0], result[1])
         self.results = max_val[0]
 
-    def build_coefficients(self):
-        self.weight_vector
+    def classify(self, vector):
+        result = 0
+        for i in range(len(self.results)):
+            result += self.results[i] * self.kernel(self.X[i], vector, *self.params)
+        return result
 
 if __name__ == "__main__":
-    svm = SVM(GAUSSIAN, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 333333 )
-    print(svm.results)
+    svm = SVM(GAUSSIAN, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [1, 1, 1, -1], 3)

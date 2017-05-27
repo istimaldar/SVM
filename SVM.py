@@ -1,5 +1,6 @@
 import copy
 from math import exp
+import matplotlib.pyplot as plt
 LINEAR = "linear"
 POLYNOMIAL = "polynomial"
 GAUSSIAN = "gaussian"
@@ -150,7 +151,6 @@ class SVM:
                 crammer_line.append(equasion["alpha"][value])
             crammer_line.append(equasion["result"])
             crammer_matrix.append(crammer_line)
-        print(len(crammer_matrix))
         self.results = SVM.solve_crammer(crammer_matrix)
 
     def find_extremums(self, matrix, order, results):
@@ -244,7 +244,36 @@ class SVM:
             return -1
         return 1
 
+    def draw_plots(self):
+        if len(self.X[0]) > 2:
+            raise ValueError("Only 2d plots is currently supported.")
+        plot_data = {"positive": {"x": [], "y": []}, "negative": {"x" :[], "y": []}}
+        for x in self.X:
+            if self.classify(x) == 1:
+                plot_data["positive"]["x"].append(x[0])
+                plot_data["positive"]["y"].append(x[1])
+            else:
+                plot_data["negative"]["x"].append(x[0])
+                plot_data["negative"]["y"].append(x[1])
+        plt.plot(plot_data["positive"]["x"], plot_data["positive"]["y"], 'ro', plot_data["negative"]["x"],
+                 plot_data["negative"]["y"], 'bo')
+        shift = [
+            0.3 * max((max(plot_data["positive"]["x"]), max(plot_data["negative"]["x"]))) -
+            min((min(plot_data["positive"]["x"]), min(plot_data["negative"]["x"]))),
+            0.3 * max((max(plot_data["positive"]["y"]), max(plot_data["negative"]["y"]))) -
+            min((min(plot_data["positive"]["y"]), min(plot_data["negative"]["y"])))
+        ]
+        borders = [
+            min((min(plot_data["positive"]["x"]), min(plot_data["negative"]["x"]))) - shift[0],
+            max((max(plot_data["positive"]["x"]), max(plot_data["negative"]["x"]))) + shift[0],
+            min((min(plot_data["positive"]["y"]), min(plot_data["negative"]["y"]))) - shift[1],
+            max((max(plot_data["positive"]["y"]), max(plot_data["negative"]["y"]))) + shift[1]
+        ]
+        plt.axis(borders)
+        plt.show()
+
+
 if __name__ == "__main__":
-    svm = SVM(POLYNOMIAL, [1, 1, 2], [[1, 1, 1], [0, 0, 0], [0, 0, 1], [0, 1, 0], [1, 1, 0]], [1, -1, -1, -1, -1], 5555)
-    print(svm.results)
-    print(svm.classify([1, 0, 0]))
+    svm = SVM(POLYNOMIAL, [1, 1, 2], [[1, -1], [0, 0]], [1, -1], 5555)
+    print(svm.classify([1, 1]))
+    svm.draw_plots()

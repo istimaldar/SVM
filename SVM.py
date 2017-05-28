@@ -131,6 +131,10 @@ class SVM:
     def laplacian_kernel(X, Y, sigma, *p):
         return exp(-(SVM.euclidean_distance(X, Y)) / sigma)
 
+    @staticmethod
+    def brutteforce_borders(X):
+        pass
+
     kernel_types = {"linear": linear_kernel, "polynomial": polynomial_kernel, "gaussian": gaussian_kernel,
                     "exponential": exponential_kernel, "laplacian": laplacian_kernel}
 
@@ -145,6 +149,7 @@ class SVM:
             raise ValueError("X and Y should be the same size")
         self.X = X
         self.Y = Y
+        self.b = 0
         self.params = params
         self.kernel = SVM.kernel_types[kernel_type].__func__
         self.c = c
@@ -177,6 +182,7 @@ class SVM:
             self.format_results()
             self.calculate()
             self.find_max()
+        self.find_b()
 
     def minimize_lagrange(self):
         crammer_matrix = []
@@ -280,10 +286,18 @@ class SVM:
                 max_val = (result[0], result[1])
         self.results = max_val[0]
 
+    def find_b(self):
+        for m, alpha in enumerate(self.results):
+            if alpha != 0:
+                break
+        self.b = 1 / self.Y[m]
+        for i in range(len(self.results)):
+            self.b -= self.results[i] * self.Y[i] * self.kernel(self.X[i], self.X[m], *self.params)
+
     def classify(self, vector):
         result = 0
         for i in range(len(self.results)):
-            result += self.results[i] * self.Y[i] * self.kernel(self.X[i], vector, *self.params)
+            result += self.results[i] * self.Y[i] * self.kernel(self.X[i], vector, *self.params) + self.b
         if result < 0:
             return -1
         return 1
@@ -321,9 +335,6 @@ class SVM:
 
 
 if __name__ == "__main__":
-    svm = SVM(GAUSSIAN, [1, 1, 2], [[-1, -1], [1, 1], [1, -1], [-1, 1], [2, 2], [-2, -2]], [1, 1, 1, 1, -1, -1], 5555)
+    svm = SVM(GAUSSIAN, [1, 1, 2], [[-1, -1], [1, 1], [1, -1], [-1, 1], [2, 2], [-2, -2]], [1, 1, 1, 1, -1, -1], 1)
     print(svm.classify([1, 1]))
     svm.draw_plots()
-    print(SVM.solve_gauss_jordan([[1, 2, 3, 4, 1], [2, 3, 4, 8, 2], [3, 51, 5, 6, 3], [7, 12, 6, 7, 4]]))
-    print(SVM.solve_crammer([[1, 2, 3, 4, 1], [2, 3, 4, 8, 2], [3, 51, 5, 6, 3], [7, 12, 6, 7, 4]]))
-    exit(0)

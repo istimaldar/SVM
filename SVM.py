@@ -53,6 +53,30 @@ class SVM:
         return result
 
     @staticmethod
+    def solve_gauss_jordan(X):
+        matrix = copy.deepcopy(X)
+        for i in range(len(matrix)):
+            mul = matrix[i][i]
+            if mul == 0:
+                print(matrix)
+            for j in range(i, len(matrix[i])):
+                matrix[i][j] /= mul
+            for k in range(i + 1, len(matrix)):
+                mul = matrix[k][i]
+                result = 0
+                for j in range(i, len(matrix[i])):
+                    matrix[k][j] -= matrix[i][j] * mul
+                    result += matrix[k][j] ** 2
+        matrix = [list(reversed(equation)) for equation in reversed(matrix)]
+        result = []
+        for i in range(len(matrix)):
+            result.append(matrix[i][0] / matrix[i][i + 1])
+            for j in range(i, len(matrix)):
+                matrix[j][0] -= result[i] * matrix[j][i + 1]
+                matrix[j][i + 1] = 0
+        return list(reversed(result))
+
+    @staticmethod
     def crammer_matrix(X, j):
         assert X, list
         for x in X:
@@ -82,7 +106,7 @@ class SVM:
         result = []
         determinant = SVM.determinant(main)
         if determinant == 0:
-            raise ZeroDivisionError
+            return SVM.solve_gauss_jordan(X)
         for i in range(len(X)):
             result.append(SVM.determinant(SVM.crammer_matrix(X, i)) / determinant)
         return result
@@ -162,7 +186,16 @@ class SVM:
                 crammer_line.append(equasion["alpha"][value])
             crammer_line.append(equasion["result"])
             crammer_matrix.append(crammer_line)
-        self.results = SVM.solve_crammer(crammer_matrix)
+        try:
+            self.results = SVM.solve_crammer(crammer_matrix)
+        except ZeroDivisionError:
+            self.results = self.find_extremumus_borders()
+
+    def find_extremumus_borders(self):
+        result = []
+        for i in self.X:
+            result.append(self.c)
+        return result
 
     def find_extremums(self, matrix, order, results):
         if len(matrix[0]["alpha"]) + len(matrix[0]["h"]) <= len(matrix):
@@ -255,6 +288,9 @@ class SVM:
             return -1
         return 1
 
+    def hyperplane(self):
+        pass
+
     def draw_plots(self):
         if len(self.X[0]) > 2:
             raise ValueError("Only 2d plots is currently supported.")
@@ -285,6 +321,9 @@ class SVM:
 
 
 if __name__ == "__main__":
-    svm = SVM(LINEAR, [1, 1, 2], [[1, -1], [0, 0]], [1, -1], 5555)
+    svm = SVM(GAUSSIAN, [1, 1, 2], [[-1, -1], [1, 1], [1, -1], [-1, 1], [2, 2], [-2, -2]], [1, 1, 1, 1, -1, -1], 5555)
     print(svm.classify([1, 1]))
     svm.draw_plots()
+    print(SVM.solve_gauss_jordan([[1, 2, 3, 4, 1], [2, 3, 4, 8, 2], [3, 51, 5, 6, 3], [7, 12, 6, 7, 4]]))
+    print(SVM.solve_crammer([[1, 2, 3, 4, 1], [2, 3, 4, 8, 2], [3, 51, 5, 6, 3], [7, 12, 6, 7, 4]]))
+    exit(0)

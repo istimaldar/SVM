@@ -121,7 +121,6 @@ def solve_simplex(function, conditions):
     decomposition_of_vectors = []
     for i, k in enumerate(function):
         Y = [condition[i] for condition in conditions]
-        print(C, Y)
         decomposition_of_vectors.append(multiply_vectors(C, Y) - k)
     # everything above works fine, everything below -- not so.
     while not check_for_maximum(decomposition_of_vectors):
@@ -135,7 +134,6 @@ def solve_simplex(function, conditions):
             for key in negative_variables:
                 line.append(res / conditions[i][negative_variables[key]])
             tau.append(line)
-        print(conditions)
 
         minimum = find_not_negative_min(tau)
         z = []
@@ -145,12 +143,18 @@ def solve_simplex(function, conditions):
         equations = [[condition[basis_vectors[key]] for key in sorted(basis_vectors)] for condition in conditions]
         equations = [equation + [condition[-1]] for equation, condition in zip(equations, conditions)]
         basis = solve_crammer(equations)
-        C = [function[basis_vectors[key]] for key in basis_vectors]# function[-len(conditions):]
-        decomposition_of_vectors = []
+        for i in range(len(conditions)):
+            if i != minimum[1][0]:
+                mult = conditions[i][basis_vectors[minimum[1][0]]] / conditions[minimum[1][0]][basis_vectors[minimum[1][0]]];
+                for j in range(len(conditions[i])):
+                    conditions[i][j] -= conditions[minimum[1][0]][j] * mult
+        C = [function[basis_vectors[key]] for key in sorted(basis_vectors)]# function[-len(conditions):]
         for i, k in enumerate(function):
-            Y = [condition[i] for condition in conditions]
-            print(C, Y)
-            decomposition_of_vectors.append(multiply_vectors(C, Y) - k)
-    return decomposition_of_vectors
+            Y = [condition[i] / condition[basis_vectors[n]] for n, condition in enumerate(conditions)]
+            decomposition_of_vectors[i] = multiply_vectors(C, Y) - k
+    result = [0 for i in range(len(conditions[0]) - 1)]
+    for key in basis_vectors:
+        result[basis_vectors[key]] = basis[key]
+    return result
 
 print(solve_simplex([9, 5, 4, 3, 2, 0], [[1, -2, 2, 0, 0, 1, 6], [1, 2, 1, 1, 0, 0, 24], [2, 1, -4, 0, 1, 0, 30]]))

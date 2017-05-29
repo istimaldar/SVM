@@ -175,6 +175,8 @@ class SVM:
             result = 0
             self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
         self.results = []
+        print(self.check_defines())
+        self.is_maximization_quadratic_programming_problem()
         if crutch:
             self.minimize_lagrange()
         else:
@@ -195,13 +197,7 @@ class SVM:
         try:
             self.results = SVM.solve_crammer(crammer_matrix)
         except ZeroDivisionError:
-            self.results = self.find_extremumus_borders()
-
-    def find_extremumus_borders(self):
-        result = []
-        for i in self.X:
-            result.append(self.c)
-        return result
+            print("Error this data set is not lineraly separable in z-space. Try to use other kernel")
 
     def find_extremums(self, matrix, order, results):
         if len(matrix[0]["alpha"]) + len(matrix[0]["h"]) <= len(matrix):
@@ -305,6 +301,18 @@ class SVM:
     def hyperplane(self):
         pass
 
+    def is_maximization_quadratic_programming_problem(self):
+        matrix = []
+        for equasion in self.matrix:
+            crammer_line = []
+            for value in sorted(equasion["alpha"]):
+                crammer_line.append(equasion["alpha"][value])
+            crammer_line.append(equasion["result"])
+            matrix.append(crammer_line)
+        if SVM.determinant(matrix) <= 0:
+            print("Hyperplane width cannot be minimized using quadratic programming. Possibly, the data is not linearly"
+                  " separable in z-space. Try using a different kernel.")
+
     def draw_plots(self):
         if len(self.X[0]) > 2:
             raise ValueError("Only 2d plots is currently supported.")
@@ -333,8 +341,17 @@ class SVM:
         plt.axis(borders)
         plt.show()
 
+    def check_defines(self):
+        result = 0
+        for i in range(len(self.X)):
+            for j in range(len(self.X)):
+                result += self.Y[i] * self.Y[j] * self.kernel(self.X[i], self.X[j], *self.params)
+        if result <= 0:
+            raise ValueError("The Wolff method for these values is too complicated to compute and therefore will be"
+                             " implemented later")
+
 
 if __name__ == "__main__":
-    svm = SVM(GAUSSIAN, [1, 1, 2], [[-1, -1], [1, 1], [1, -1], [-1, 1], [2, 2], [-2, -2]], [1, 1, 1, 1, -1, -1], 1)
+    svm = SVM(GAUSSIAN, [1, 1, 3], [[-1, -1], [1, 1], [1, -1], [-1, 1], [2, 2], [-2, -2]], [1, 1, 1, 1, -1, -1], 1)
     print(svm.classify([1, 1]))
     svm.draw_plots()

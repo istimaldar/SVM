@@ -117,9 +117,7 @@ def solve_simplex(function, conditions):
     equations = [condition[-(len(conditions) + 1):] for condition in conditions]
     basis = solve_crammer(equations)
     basis_vectors = {i: len(condition) + i - len(conditions) - 1 for i, condition in enumerate(conditions)}
-    print(basis_vectors)
     C = function[-len(conditions):]
-    print(C)
     decomposition_of_vectors = []
     for i, k in enumerate(function):
         Y = [condition[i] for condition in conditions]
@@ -143,10 +141,16 @@ def solve_simplex(function, conditions):
         z = []
         for i in range(len(tau[minimum[1][0]])):
             z.append(-1 * tau[minimum[1][0]][i] * decomposition_of_vectors[negative_variables[i]])
-        print(z)
-        print(negative_variables)
-        print(tau)
-        break
+        basis_vectors[minimum[1][0]] = negative_variables[z.index(max(z))]
+        equations = [[condition[basis_vectors[key]] for key in sorted(basis_vectors)] for condition in conditions]
+        equations = [equation + [condition[-1]] for equation, condition in zip(equations, conditions)]
+        basis = solve_crammer(equations)
+        C = [function[basis_vectors[key]] for key in basis_vectors]# function[-len(conditions):]
+        decomposition_of_vectors = []
+        for i, k in enumerate(function):
+            Y = [condition[i] for condition in conditions]
+            print(C, Y)
+            decomposition_of_vectors.append(multiply_vectors(C, Y) - k)
     return decomposition_of_vectors
 
 print(solve_simplex([9, 5, 4, 3, 2, 0], [[1, -2, 2, 0, 0, 1, 6], [1, 2, 1, 1, 0, 0, 24], [2, 1, -4, 0, 1, 0, 30]]))

@@ -1,6 +1,3 @@
-import copy
-
-
 def minor(X, i, j):
     result = []
     for i1, x in enumerate(X):
@@ -122,7 +119,6 @@ def solve_simplex(function, conditions):
     for i, k in enumerate(function):
         Y = [condition[i] for condition in conditions]
         decomposition_of_vectors.append(multiply_vectors(C, Y) - k)
-    # everything above works fine, everything below -- not so.
     while not check_for_maximum(decomposition_of_vectors):
         negative_variables = {}
         for i, vector in enumerate(decomposition_of_vectors):
@@ -134,7 +130,6 @@ def solve_simplex(function, conditions):
             for key in negative_variables:
                 line.append(res / conditions[i][negative_variables[key]])
             tau.append(line)
-
         minimum = find_not_negative_min(tau)
         z = []
         for i in range(len(tau[minimum[1][0]])):

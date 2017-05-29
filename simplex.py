@@ -137,7 +137,13 @@ def solve_simplex(function, conditions):
             for key in negative_variables:
                 line.append(res / conditions[i][negative_variables[key]])
             tau.append(line)
-        print(find_not_negative_min(tau))
+        print(conditions)
+
+        minimum = find_not_negative_min(tau)
+        z = []
+        for i in range(len(tau[minimum[1][0]])):
+            z.append(-1 * tau[minimum[1][0]][i] * decomposition_of_vectors[negative_variables[i]])
+        print(z)
         print(negative_variables)
         print(tau)
         break

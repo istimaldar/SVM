@@ -45,15 +45,18 @@ def generate_w_minimize_system(A, b, C, p):
     for i, equation in enumerate(A):
         w = [0 for element in range(n)]
         z1 = [0 for element in range(n1)]
+        z2 = [0 for element in range(n1)]
         w[i] = 1
-        equation = equation + w + z1 + b[i]
+        equation = equation + w + z1 + z2 + b[i]
         result.append(equation)
     for i, equation in enumerate(C):
         equation = [2 * element for element in equation]
         w = [0 for element in range(n)]
         z1 = [0 for element in range(n1)]
+        z2 = [0 for element in range(n1)]
         z1[i] = 1
-        equation = equation + [0 for element in range(n - 1)] + w + z1 + [(-p[i])]
+        z2[i] = -1
+        equation = equation + [0 for element in range(n - 1)] + w + z1 + z2 + [(-p[i])]
         result.append(equation)
     return result
 
@@ -61,10 +64,10 @@ def generate_w_minimize_system(A, b, C, p):
 def minimize_w(C, n, C_matrix):
     A = genarate_A(n)
     conditions = generate_w_minimize_system(A, generate_b(n, C), C_matrix, generate_p(2))
-    function = [1 if i < len(A) else 0 for i in range(len(conditions[0]) - 1)]
+    function = [1 if n + len(A) - 1 <= i < n +  2 * len(A) - 1 else 0 for i in range(len(conditions[0]) - 1)]
     print(function)
     print(conditions)
-    return simplex.solve_simplex(function, conditions)
+    return simplex.solve_simplex_custom_basis(function, conditions)
 
 
 class WolfTest(unittest.TestCase):

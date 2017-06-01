@@ -1,5 +1,4 @@
 import unittest
-
 import simplex
 
 
@@ -35,14 +34,37 @@ def generate_b(n, C):
     return result
 
 
-def generate_w_minimize_system(A, b, C):
+def generate_p(n):
+    return [1 for element in range(n)]
+
+
+def generate_w_minimize_system(A, b, C, p):
     n = len(A)
+    n1 = len(C)
+    result = []
     for i, equation in enumerate(A):
-        w = [0 in range(n)]
-        z1 = [0 in range(n)]
-        z2 = [0 in range(n)]
+        w = [0 for element in range(n)]
+        z1 = [0 for element in range(n1)]
         w[i] = 1
-        equation = equation + w + z1 + z2
+        equation = equation + w + z1 + b[i]
+        result.append(equation)
+    for i, equation in enumerate(C):
+        equation = [2 * element for element in equation]
+        w = [0 for element in range(n)]
+        z1 = [0 for element in range(n1)]
+        z1[i] = 1
+        equation = equation + [0 for element in range(n - 1)] + w + z1 + [(-p[i])]
+        result.append(equation)
+    return result
+
+
+def minimize_w(C, n, C_matrix):
+    A = genarate_A(n)
+    conditions = generate_w_minimize_system(A, generate_b(n, C), C_matrix, generate_p(2))
+    function = [1 if i < len(A) else 0 for i in range(len(conditions[0]) - 1)]
+    print(function)
+    print(conditions)
+    return simplex.solve_simplex(function, conditions)
 
 
 class WolfTest(unittest.TestCase):
@@ -52,6 +74,15 @@ class WolfTest(unittest.TestCase):
     def test_b(self):
         self.assertEqual(generate_b(2, 3), [[0], [3], [3]])
 
+    def test_equations(self):
+        self.assertEqual(generate_w_minimize_system(genarate_A(2), generate_b(2, 2), [[9, -1], [-1, 9]], generate_p(2)),
+                         [[1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+                          [0, 1, 0, 0, 0, 0, 0, -1, 0, 1, 0, 2],
+                          [0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 1, 2],
+                          [0, 0, 0, 1, 0, -1, 0, 18, -2, 0, 0, -1],
+                          [0, 0, 0, 0, 1, 0, -1, -2, 18, 0, 0, -1]])
+
 
 if __name__ == "__main__":
-    unittest.main()
+    # unittest.main()
+    print(minimize_w(2, 2, [[9, -1], [-1, 9]]))

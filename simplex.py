@@ -131,7 +131,10 @@ def solve_simplex(function, conditions):
         for i, res in enumerate(basis):
             line = []
             for key in negative_variables:
-                line.append(res / conditions[i][negative_variables[key]])
+                if conditions[i][negative_variables[key]] == 0:
+                    line.append(-1)
+                else:
+                    line.append(res / conditions[i][negative_variables[key]])
             tau.append(line)
         minimum = find_not_negative_min(tau)
         z = []
@@ -150,6 +153,7 @@ def solve_simplex(function, conditions):
         for i, k in enumerate(function):
             Y = [condition[i] / condition[basis_vectors[n]] for n, condition in enumerate(conditions)]
             decomposition_of_vectors[i] = multiply_vectors(C, Y) - k
+        print(basis)
     result = [0 for i in range(len(conditions[0]) - 1)]
     for key in basis_vectors:
         result[basis_vectors[key]] = basis[key]

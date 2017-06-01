@@ -1,3 +1,6 @@
+import unittest
+
+
 def minor(X, i, j):
     result = []
     for i1, x in enumerate(X):
@@ -152,4 +155,11 @@ def solve_simplex(function, conditions):
         result[basis_vectors[key]] = basis[key]
     return result
 
-print(solve_simplex([9, 5, 4, 3, 2, 0], [[1, -2, 2, 0, 0, 1, 6], [1, 2, 1, 1, 0, 0, 24], [2, 1, -4, 0, 1, 0, 30]]))
+
+class SimplexTest(unittest.TestCase):
+    def test_simple(self):
+        self.assertEqual(solve_simplex([9, 5, 4, 3, 2, 0], [[1, -2, 2, 0, 0, 1, 6], [1, 2, 1, 1, 0, 0, 24],
+                                                            [2, 1, -4, 0, 1, 0, 30]]), [0, 7.0, 10.0, 0, 63.0, 0])
+
+if __name__ == "__main__":
+    unittest.main()

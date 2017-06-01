@@ -1,6 +1,8 @@
 import copy
+import unittest
 from math import exp
 import matplotlib.pyplot as plt
+import wolf_method
 LINEAR = "linear"
 POLYNOMIAL = "polynomial"
 GAUSSIAN = "gaussian"
@@ -154,10 +156,13 @@ class SVM:
         self.kernel = SVM.kernel_types[kernel_type].__func__
         self.c = c
         self.matrix = []
+        self.C = []
         for i in range(len(X)):
             alpha = {}
+            equation = []
             for j in range(len(X)):
                 data = Y[i] * Y[j] * self.kernel(X[i], X[j], *params)
+                equation.append(data)
                 alpha[j] = data
             h = {0: Y[i]}
             for j in range(1, 2 * len(X) + 1):
@@ -169,6 +174,7 @@ class SVM:
                     h[j] = 0
             result = 1
             self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
+            self.C.append(equation)
         if not crutch:
             alpha = {n: d for n, d in enumerate(Y)}
             h = {n: 0 for n in range(len(X) * 2 + 1)}
@@ -350,8 +356,29 @@ class SVM:
             raise ValueError("The Wolff method for these values is too complicated to compute and therefore will be"
                              " implemented later")
 
+    def get_C(self):
+        return self.C
+
+
+class WolfTest(unittest.TestCase):
+    def test_A(self):
+        svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 1)
+        self.assertEqual(svm.classify([-1, -1]), -1)
+        self.assertEqual(svm.classify([-1, 1]), 1)
+        self.assertEqual(svm.classify([1, -1]), 1)
+        self.assertEqual(svm.classify([1, 1]), -1)
+
+    def test_b(self):
+        svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 1)
+        self.assertEqual(svm.get_C(), [[9, -1, -1, 1], [-1, 9, 1, -1], [-1, 1, 9, -1], [1, -1, -1, 9]])
+
+    def test_simplest_b(self):
+        svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [1, 1]], [-1, 1], 1)
+        self.assertEqual(svm.get_C(), [[9, -1], [-1, 9]])
 
 if __name__ == "__main__":
-    svm = SVM(GAUSSIAN, [1, 1, 3], [[-1, -1], [1, 1], [1, -1], [-1, 1], [2, 2], [-2, -2]], [1, 1, 1, 1, -1, -1], 1)
+    unittest.main()
+    svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 1)
+    print(svm.matrix)
     print(svm.classify([1, 1]))
     svm.draw_plots()

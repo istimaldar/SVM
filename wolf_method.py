@@ -61,13 +61,27 @@ def generate_w_minimize_system(A, b, C, p):
     return result
 
 
+def find_basis(conditions, n, n1):
+    basis = []
+    for i in range(2 * n - 1):
+        basis.append(len(conditions[i]) - (2 * n1 + 2 * n - i))
+    for i in range(n1):
+        value = len(conditions[2 * n - 1 + i]) -(2 * n1 - i + 1) if conditions[2 * n - 1 + i][-(2 * n1 - i)] > 0 else \
+            len(conditions[2 * n - 1 + i]) - (n1 - i + 1)
+        basis.append(value)
+    return basis
+
+
 def minimize_w(C, n, C_matrix):
     A = genarate_A(n)
+    n1 = len(C_matrix)
     conditions = generate_w_minimize_system(A, generate_b(n, C), C_matrix, generate_p(2))
-    function = [1 if n + len(A) - 1 <= i < n +  2 * len(A) - 1 else 0 for i in range(len(conditions[0]) - 1)]
-    print(function)
-    print(conditions)
-    return simplex.solve_simplex_custom_basis(function, conditions)
+    function = [1 if n + len(A) - 1 <= i < n + 2 * len(A) - 1 else 0 for i in range(len(conditions[0]) - 1)]
+    return simplex.simplex_method(function, conditions, find_basis(conditions, n, n1))
+
+
+def wolf_method(C, n, C_matrix, A_matrix=None):
+    pass
 
 
 class WolfTest(unittest.TestCase):
@@ -79,13 +93,12 @@ class WolfTest(unittest.TestCase):
 
     def test_equations(self):
         self.assertEqual(generate_w_minimize_system(genarate_A(2), generate_b(2, 2), [[9, -1], [-1, 9]], generate_p(2)),
-                         [[1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
-                          [0, 1, 0, 0, 0, 0, 0, -1, 0, 1, 0, 2],
-                          [0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 1, 2],
-                          [0, 0, 0, 1, 0, -1, 0, 18, -2, 0, 0, -1],
-                          [0, 0, 0, 0, 1, 0, -1, -2, 18, 0, 0, -1]])
+                         [[1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], [-1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 2],
+                          [0, -1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2], [18, -2, 0, 0, 0, 0, 0, 1, 0, -1, 0, -1],
+                          [-2, 18, 0, 0, 0, 0, 0, 0, 1, 0, -1, -1]])
 
+    def test_minimize_w(self):
+        self.assertEqual(minimize_w(2, 2, [[9, -1], [-1, 9]]), [0.0, 0, 2.0, 2.0, 0, 0, 0, 0, 0, 1.0, 1.0])
 
 if __name__ == "__main__":
-    # unittest.main()
-    print(minimize_w(2, 2, [[9, -1], [-1, 9]]))
+    unittest.main()

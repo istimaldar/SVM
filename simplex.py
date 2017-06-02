@@ -1,6 +1,7 @@
 import unittest
 
 import copy
+from itertools import filterfalse
 
 
 def minor(X, i, j):
@@ -189,7 +190,7 @@ def calculate(function, values):
     return result
 
 
-def simplex_method(function, conditions, basis=None, minimization=True):
+def simplex_method(function, conditions, basis=None, minimization=True, conditional=False, n=0):
     if basis is None:
         basis = []
     if len(basis) > len(conditions):
@@ -214,6 +215,16 @@ def simplex_method(function, conditions, basis=None, minimization=True):
         if (to_replace <= 0 and minimization) or (to_replace >= 0 and not minimization):
             break
         column = coefficients.index(to_replace)
+        if conditional and column < 2 * n:
+            if (column < n and column + n in basis) or (column >= n and column - n in basis):
+                new_coefficients = coefficients[:]
+                filterfalse(lambda x: (x <= 0 and minimization) or (x >= 0 and not minimization),
+                            new_coefficients)
+                filterfalse(lambda x: (x < n and x + n in basis) or (x >= n and x - n in basis),
+                            new_coefficients)
+                to_replace = max(coefficients) if minimization else min(coefficients)
+                if (to_replace <= 0 and minimization) or (to_replace >= 0 and not minimization):
+                    break
         to_replace = float('inf')
         string = 0
         for i, coefficient in enumerate(decompositions[column]):
@@ -222,19 +233,19 @@ def simplex_method(function, conditions, basis=None, minimization=True):
                     string = i
         basis[string] = column
     basis_value = calculate_basis(conditions, basis)
-    return [0 if i not in basis else basis_value[basis.index(i)] for i in range(len(function))]
+    return [0 if i not in basis else basis_value[basis.index(i)] for i in range(len(function))], result, basis
 
 
 class SimplexTest(unittest.TestCase):
     def test_maximize(self):
         self.assertEqual(simplex_method([9, 5, 4, 3, 2, 0], [[1, -2, 2, 0, 0, 1, 6], [1, 2, 1, 1, 0, 0, 24],
-                                                            [2, 1, -4, 0, 1, 0, 30]], [], False),
+                                                            [2, 1, -4, 0, 1, 0, 30]], [], False)[0],
                          [0, 7.0, 10.0, 0, 63.0, 0])
 
     def test_minimize(self):
         self.assertEqual(simplex_method([1, 9, 5, 3, 4, 14], [[1, 0, 0, 1, 0, 0, 20], [0, 1, 0, 0, 1, 0, 50],
                                                    [0, 0, 1, 0, 0, 1, 30], [0, 0, 0, 1, 1, 1, 60]],
-                             [1, 3, 4, 5]), [10, 0, 30, 10, 50, 0])
+                             [1, 3, 4, 5])[0], [10, 0, 30, 10, 50, 0])
 
 if __name__ == "__main__":
     unittest.main()

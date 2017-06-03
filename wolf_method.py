@@ -68,10 +68,27 @@ def find_basis(conditions, n, n1):
     for i in range(2 * n - 1):
         basis.append(len(conditions[i]) - (2 * n1 + 2 * n - i))
     for i in range(n1):
-        value = len(conditions[2 * n - 1 + i]) -(2 * n1 - i + 1) if conditions[2 * n - 1 + i][-(2 * n1 - i)] > 0 else \
+        value = len(conditions[2 * n - 1 + i]) - (2 * n1 - i + 1) if conditions[2 * n - 1 + i][-(2 * n1 - i)] > 0 else \
             len(conditions[2 * n - 1 + i]) - (n1 - i + 1)
         basis.append(value)
     return basis
+
+
+def generate_z_minimization_function(C, n, C_matrix, basis):
+    A = genarate_A(n)
+    n1 = len(C_matrix)
+    conditions = generate_w_minimize_system(A, generate_b(n, C), C_matrix, generate_p(2))
+    for i, condition in enumerate(conditions):
+        conditions[i] = condition[:2 * n] + condition[4 * n - 1:]
+    basis2 = list(filterfalse(lambda x: x < 2 * n, basis))
+    basis2.append(len(conditions[0]) - 1)
+    basis2 = [i for i in range(2 * n, len(conditions[0])) if i not in basis2]
+    conditions = [list(column) for i, column in enumerate(zip(*conditions)) if i not in basis2]
+    conditions = [list(column) for column in zip(*conditions)]
+
+
+def minimize_z(C, n, C_matrix, basis):
+    generate_z_minimization_function(C, n, C_matrix, basis)
 
 
 def minimize_w(C, n, C_matrix):
@@ -84,16 +101,12 @@ def minimize_w(C, n, C_matrix):
 
 def wolf_method(C, n, C_matrix):
     first_phase, result, basis = minimize_w(C, n, C_matrix)
-    print(first_phase)
     first_phase = first_phase[:2 * n] + first_phase[4 * n - 1:]
-    print(basis)
     for i, element in enumerate(basis):
         if element > 2 * n:
-            basis[i] = element - 2 * n - 1
-    print(first_phase)
-    print(basis)
+            basis[i] = element - 2 * n + 1
     first_phase = first_phase[2 * n:] + list(filterfalse(lambda x: x == 0, first_phase[:2 * n]))
-    print(first_phase)
+    minimize_z(C, n, C_matrix, basis)
 
 
 class WolfTest(unittest.TestCase):
@@ -112,6 +125,7 @@ class WolfTest(unittest.TestCase):
     def test_minimize_w(self):
         self.assertEqual(minimize_w(2, 2, [[9, -1], [-1, 9]])[0], [0.0, 0, 2.0, 2.0, 0, 0, 0, 0, 0, 1.0, 1.0])
 
+
 if __name__ == "__main__":
     # unittest.main()
-    wolf_method(2, 2, [[9, -1], [-1, 9]]), [0.0, 0, 2.0, 2.0, 0, 0, 0, 0, 0, 1.0, 1.0]
+    wolf_method(2, 2, [[-4.5, 0.5], [0.5, -4.5]])

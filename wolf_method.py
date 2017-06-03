@@ -85,10 +85,33 @@ def generate_z_minimization_function(C, n, C_matrix, basis):
     basis2 = [i for i in range(2 * n, len(conditions[0])) if i not in basis2]
     conditions = [list(column) for i, column in enumerate(zip(*conditions)) if i not in basis2]
     conditions = [list(column) for column in zip(*conditions)]
+    empty_line = [0 for i in conditions[0]]
+    while len(conditions) < len(A) + len(A[0]):
+        conditions.append(empty_line[:])
+    v = [[-1 if i == j else 0 for j in range(len(A[0]))] for i in range(len(A[0]))]
+    empty_line = [0 for i in v]
+    while len(v) < len(conditions):
+        v = [empty_line[:]] + v
+    for i in range(len(conditions)):
+        conditions[i] = conditions[i][:2 * n] + v[i] + conditions[i][2 * n:]
+    transpose_A = [list(column) for column in zip(*A)]
+    empty_line = [0 for i in A]
+    while len(transpose_A) < len(conditions):
+        transpose_A = [empty_line[:]] + transpose_A
+    for i in range(len(conditions)):
+        conditions[i] = conditions[i][:2 * n] + transpose_A[i] + conditions[i][2 * n:]
+    return conditions
+
+
+def build_new_basis(basis, n):
+    return [element + 3 * n - 1 if element >= 2 * n else element for element in basis]
 
 
 def minimize_z(C, n, C_matrix, basis):
-    generate_z_minimization_function(C, n, C_matrix, basis)
+    conditions = generate_z_minimization_function(C, n, C_matrix, basis)
+    function = [1 if len(conditions[0]) - n - 1 <= i < len(conditions[0]) - 1 else 0 for i in range(len(conditions[0]))]
+    print(function)
+    return simplex.simplex_method(function, conditions, build_new_basis(basis, n), True, n)
 
 
 def minimize_w(C, n, C_matrix):
@@ -106,7 +129,7 @@ def wolf_method(C, n, C_matrix):
         if element > 2 * n:
             basis[i] = element - 2 * n + 1
     first_phase = first_phase[2 * n:] + list(filterfalse(lambda x: x == 0, first_phase[:2 * n]))
-    minimize_z(C, n, C_matrix, basis)
+    return minimize_z(C, n, C_matrix, basis)
 
 
 class WolfTest(unittest.TestCase):
@@ -128,4 +151,4 @@ class WolfTest(unittest.TestCase):
 
 if __name__ == "__main__":
     # unittest.main()
-    wolf_method(2, 2, [[-4.5, 0.5], [0.5, -4.5]])
+    print(wolf_method(2, 2, [[-4.5, 0.5], [0.5, -4.5]]))

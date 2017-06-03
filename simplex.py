@@ -247,5 +247,10 @@ class SimplexTest(unittest.TestCase):
                                                    [0, 0, 1, 0, 0, 1, 30], [0, 0, 0, 1, 1, 1, 60]],
                              [1, 3, 4, 5])[0], [10, 0, 30, 10, 50, 0])
 
+    def test_one(self):
+        self.assertEqual(simplex_method([3, 2, 0, 0, 0],
+                                        [[2, 1, 1, 0, 0, 18], [2, 3, 0, 1, 0, 42], [3, 1, 0, 0, 1, 24]], [], False)[0][:2],
+                         [3, 12])
+
 if __name__ == "__main__":
     unittest.main()

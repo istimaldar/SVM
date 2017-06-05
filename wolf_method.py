@@ -107,29 +107,29 @@ def build_new_basis(basis, n):
     return [element + 3 * n - 1 if element >= 2 * n else element for element in basis]
 
 
-def minimize_z(C, n, C_matrix, basis):
-    conditions = generate_z_minimization_function(C, n, C_matrix, basis)
+def minimize_z(A, B, C, P, basis):
+    n = len(A[0])
+    conditions = generate_z_minimization_function(A, B, C, P)
     function = [1 if len(conditions[0]) - n - 1 <= i < len(conditions[0]) - 1 else 0 for i in range(len(conditions[0]))]
-    print(function)
     return simplex.simplex_method(function, conditions, build_new_basis(basis, n), True, n)
 
 
-def minimize_w(C, n, C_matrix):
-    A = genarate_A(n)
-    n1 = len(C_matrix)
-    conditions = generate_w_minimize_system(A, generate_b(n, C), C_matrix, generate_p(2))
+def minimize_w(A, B, C, P):
+    n = len(A[0])
+    conditions = generate_w_minimize_system(A, B, C, P)
     function = [1 if n + len(A) - 1 <= i < n + 2 * len(A) - 1 else 0 for i in range(len(conditions[0]) - 1)]
-    return simplex.simplex_method(function, conditions, find_basis(conditions, n, n1))
+    return simplex.simplex_method(function, conditions, find_basis(conditions, n, n))
 
 
-def wolf_method(C, n, C_matrix):
-    first_phase, result, basis = minimize_w(C, n, C_matrix)
+def wolf_method(A, B, C, P):
+    n = len(A[0])
+    first_phase, result, basis = minimize_w(A, B, C, P)
     first_phase = first_phase[:2 * n] + first_phase[4 * n - 1:]
     for i, element in enumerate(basis):
         if element > 2 * n:
             basis[i] = element - 2 * n + 1
     first_phase = first_phase[2 * n:] + list(filterfalse(lambda x: x == 0, first_phase[:2 * n]))
-    return minimize_z(C, n, C_matrix, basis)
+    return minimize_z(A, B, C, P, basis)
 
 
 class WolfTest(unittest.TestCase):
@@ -151,4 +151,4 @@ class WolfTest(unittest.TestCase):
 
 if __name__ == "__main__":
     # unittest.main()
-    print(wolf_method(2, 2, [[-4.5, 0.5], [0.5, -4.5]]))
+    pass

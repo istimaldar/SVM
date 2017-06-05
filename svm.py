@@ -1,8 +1,10 @@
 import copy
-import unittest
 from math import exp
+
 import matplotlib.pyplot as plt
-import wolf_method
+
+import utility
+
 LINEAR = "linear"
 POLYNOMIAL = "polynomial"
 GAUSSIAN = "gaussian"
@@ -12,130 +14,35 @@ LAPLICAN = "laplacian"
 
 class SVM:
     @staticmethod
-    def multiply_vector(X, Y):
-        if len(X) != len(Y):
-            raise ValueError("X and Y should be the same size")
-        result = 0
-        for i in range(len(X)):
-            result += X[i] * Y[i]
-        return result
-
-    @staticmethod
-    def euclidean_distance(X, Y):
-        vector = [(x - y) ** 2 for x, y in (X, Y)]
-        return sum(vector) ** 0.5
-
-    @staticmethod
-    def minor(X, i, j):
-        result = []
-        for i1, x in enumerate(X):
-            if i1 == i:
-                continue
-            temp = []
-            for j1, y in enumerate(x):
-                if j1 == j:
-                    continue
-                temp.append(y)
-            result.append(temp)
-        return result
-
-    @staticmethod
-    def determinant(X):
-        assert X, list
-        size = len(X[0])
-        for x in X:
-            assert x, list
-            if len(x) != size:
-                raise ValueError("Wrong matrix")
-        if len(X) == 1:
-            return X[0][0]
-        result = 0
-        for i in range(len(X)):
-            result += ((-1) ** i) * X[0][i] * SVM.determinant(SVM.minor(X, 0, i))
-        return result
-
-    @staticmethod
-    def solve_gauss_jordan(X):
-        matrix = copy.deepcopy(X)
-        for i in range(len(matrix)):
-            mul = matrix[i][i]
-            if mul == 0:
-                print(matrix)
-            for j in range(i, len(matrix[i])):
-                matrix[i][j] /= mul
-            for k in range(i + 1, len(matrix)):
-                mul = matrix[k][i]
-                result = 0
-                for j in range(i, len(matrix[i])):
-                    matrix[k][j] -= matrix[i][j] * mul
-                    result += matrix[k][j] ** 2
-        matrix = [list(reversed(equation)) for equation in reversed(matrix)]
-        result = []
-        for i in range(len(matrix)):
-            result.append(matrix[i][0] / matrix[i][i + 1])
-            for j in range(i, len(matrix)):
-                matrix[j][0] -= result[i] * matrix[j][i + 1]
-                matrix[j][i + 1] = 0
-        return list(reversed(result))
-
-    @staticmethod
-    def crammer_matrix(X, j):
-        assert X, list
-        for x in X:
-            assert x, list
-            if len(x) != len(X) + 1:
-                raise ValueError("Wrong matrix size")
-        result = []
-        for i1 in range(len(X)):
-            temp = []
-            for j1 in range(len(X)):
-                temp.append(X[i1][j1] if j1 != j else X[i1][len(X)])
-            result.append(temp)
-        return result
-
-    @staticmethod
-    def crammer_main_matrix(X, *p):
-        assert X, list
-        for x in X:
-            assert x, list
-            if len(x) != len(X) + 1:
-                raise ValueError("Wrong matrix size")
-        return [x[:-1] for x in X]
-
-    @staticmethod
     def solve_crammer(X):
-        main = SVM.crammer_main_matrix(X)
+        main = utility.crammer_main_matrix(X)
         result = []
-        determinant = SVM.determinant(main)
+        determinant = utility.determinant(main)
         if determinant == 0:
-            return SVM.solve_gauss_jordan(X)
+            return utility.solve_gauss_jordan(X)
         for i in range(len(X)):
-            result.append(SVM.determinant(SVM.crammer_matrix(X, i)) / determinant)
+            result.append(utility.determinant(utility.crammer_matrix(X, i)) / determinant)
         return result
 
     @staticmethod
     def linear_kernel(X, Y, c=0, *p):
-        return SVM.multiply_vector(X, Y) + c
+        return utility.multiply_vector(X, Y) + c
 
     @staticmethod
     def polynomial_kernel(X, Y, c=0, alpha=0, d=2, *p):
-        return (SVM.multiply_vector([alpha * x for x in X], Y) + c) ** d
+        return (utility.multiply_vector([alpha * x for x in X], Y) + c) ** d
 
     @staticmethod
     def gaussian_kernel(X, Y, sigma=1, *p):
-        return exp(-(SVM.euclidean_distance(X, Y) ** 2) / (2 * (sigma ** 2)))
+        return exp(-(utility.euclidean_distance(X, Y) ** 2) / (2 * (sigma ** 2)))
 
     @staticmethod
     def exponential_kernel(X, Y, sigma=1, *p):
-        return exp(-(SVM.euclidean_distance(X, Y)) / (2 * (sigma ** 2)))
+        return exp(-(utility.euclidean_distance(X, Y)) / (2 * (sigma ** 2)))
 
     @staticmethod
     def laplacian_kernel(X, Y, sigma, *p):
-        return exp(-(SVM.euclidean_distance(X, Y)) / sigma)
-
-    @staticmethod
-    def brutteforce_borders(X):
-        pass
+        return exp(-(utility.euclidean_distance(X, Y)) / sigma)
 
     kernel_types = {"linear": linear_kernel, "polynomial": polynomial_kernel, "gaussian": gaussian_kernel,
                     "exponential": exponential_kernel, "laplacian": laplacian_kernel}
@@ -181,7 +88,6 @@ class SVM:
             result = 0
             self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
         self.results = []
-        print(self.check_defines())
         self.is_maximization_quadratic_programming_problem()
         if crutch:
             self.minimize_lagrange()
@@ -315,7 +221,7 @@ class SVM:
                 crammer_line.append(equasion["alpha"][value])
             crammer_line.append(equasion["result"])
             matrix.append(crammer_line)
-        if SVM.determinant(matrix) <= 0:
+        if utility.determinant(matrix) <= 0:
             print("Hyperplane width cannot be minimized using quadratic programming. Possibly, the data is not linearly"
                   " separable in z-space. Try using a different kernel.")
 
@@ -360,24 +266,7 @@ class SVM:
         return self.C
 
 
-class WolfTest(unittest.TestCase):
-    def test_A(self):
-        svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 1)
-        self.assertEqual(svm.classify([-1, -1]), -1)
-        self.assertEqual(svm.classify([-1, 1]), 1)
-        self.assertEqual(svm.classify([1, -1]), 1)
-        self.assertEqual(svm.classify([1, 1]), -1)
-
-    def test_b(self):
-        svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 1)
-        self.assertEqual(svm.get_C(), [[9, -1, -1, 1], [-1, 9, 1, -1], [-1, 1, 9, -1], [1, -1, -1, 9]])
-
-    def test_simplest_b(self):
-        svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [1, 1]], [-1, 1], 1)
-        self.assertEqual(svm.get_C(), [[9, -1], [-1, 9]])
-
 if __name__ == "__main__":
-    unittest.main()
     svm = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 1)
     print(svm.matrix)
     print(svm.classify([1, 1]))

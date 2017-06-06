@@ -30,7 +30,7 @@ def find_not_negative_min(tau):
                 return min_value, coordinates
 
 
-def solve_simplex(function, conditions):
+def solve_simplex(function, conditions):  # depicted method I'll delete it later
     assert function, list
     assert conditions, list
     if len(conditions) == 0:
@@ -115,7 +115,7 @@ def calculate(function, values):
 
 
 def simplex_method(function, conditions, basis=None, minimization=True, excluded=None, conditional=False, n=0):
-    if basis is None:
+    if basis is None:  # build initial basis
         basis = []
     if excluded is None:
         excluded = []
@@ -137,13 +137,13 @@ def simplex_method(function, conditions, basis=None, minimization=True, excluded
             for i, value in enumerate(decomposition):
                 coefficient += function[basis[i]] * value
             coefficients.append(coefficient - function[j])
-        to_replace = max(coefficients) if minimization else min(coefficients)
+        new_coefficients = [n for i, n in enumerate(coefficients) if i not in excluded]
+        to_replace = max(new_coefficients) if minimization else min(new_coefficients)
         if (to_replace <= 0 and minimization) or (to_replace >= 0 and not minimization):
             break
         column = coefficients.index(to_replace)
         if conditional and column < 2 * n:
             if (column < n and column + n in basis) or (column >= n and column - n in basis):
-                new_coefficients = coefficients[:]
                 filterfalse(lambda x: (x <= 0 and minimization) or (x >= 0 and not minimization),
                             new_coefficients)
                 filterfalse(lambda x: (x < n and x + n in basis) or (x >= n and x - n in basis),

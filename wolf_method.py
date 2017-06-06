@@ -1,4 +1,3 @@
-import unittest
 from itertools import filterfalse
 
 import simplex
@@ -59,6 +58,22 @@ def generate_w_minimize_system(A, b, C, p):
         z1[i] = 1
         z2[i] = -1
         equation = equation + [0 for element in range(n - 1)] + w + z1 + z2 + [(-p[i])]
+        result.append(equation)
+    return result
+
+
+def generate_equations(A, B, C, P):
+    result = []
+    for i in range(len(A)):
+        equation = {'x': A[i], 'w': [1 for j in range(len(A))], 'v': [0 for j in range(len(A[i]))],
+                    'u': [0 for j in range(len(A))], 'z1': [0 for j in range(len(A[i]))],
+                    'z2': [0 for j in range(len(A[i]))], 'mup': [0], 'result': B[i]}
+        result.append(equation)
+    transpone_A = [list(i) for i in zip(*A)]
+    for i in range(len(C)):
+        equation = {'x': C[i], 'w': [0 for j in range(len(A))], 'v': [-1 for j in range(len(C[i]))],
+                    'u': [j for j in transpone_A[i]], 'z1': [1 for j in range(len(C[i]))],
+                    'z2': [-1 for j in range(len(C[i]))], 'mup': P[i], 'result': [0]}
         result.append(equation)
     return result
 
@@ -132,23 +147,37 @@ def wolf_method(A, B, C, P):
     return minimize_z(A, B, C, P, basis)
 
 
-class WolfTest(unittest.TestCase):
-    def test_A(self):
-        self.assertEqual(genarate_A(2), [[1, 1, 0, 0], [-1, 0, 1, 0], [0, -1, 0, 1]])
+def equation_to_array(equations, variables):
+    result = []
+    for equation in equations:
+        for variable in variables:
+            result += equation[variable]
+        result += equation['result']
+    return result
 
-    def test_b(self):
-        self.assertEqual(generate_b(2, 3), [[0], [3], [3]])
 
-    def test_equations(self):
-        self.assertEqual(generate_w_minimize_system(genarate_A(2), generate_b(2, 2), [[9, -1], [-1, 9]], generate_p(2)),
-                         [[1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], [-1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 2],
-                          [0, -1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 2], [18, -2, 0, 0, 0, 0, 0, 1, 0, -1, 0, -1],
-                          [-2, 18, 0, 0, 0, 0, 0, 0, 1, 0, -1, -1]])
+def basis_to_array(basis, variables):
+    start = 0
+    result = []
+    for variable in variables:
+        for i, value in enumerate(basis[variable]):
+            if value:
+               result.append(start + i)
+        start += len(basis[variable])
+    return result
 
-    def test_minimize_w(self):
-        self.assertEqual(minimize_w(2, 2, [[9, -1], [-1, 9]])[0], [0.0, 0, 2.0, 2.0, 0, 0, 0, 0, 0, 1.0, 1.0])
+
+def go_for_it(A, B, C, P):
+    n = len(A[0])
+    result = {'x': [0 for i in A[0]], 'w': [0 for j in range(len(A))], 'v': [0 for j in range(len(A[0]))],
+              'u': [0 for j in range(len(A))], 'z1': [0 for j in range(len(A[0]))],
+              'z2': [0 for j in range(len(A[0]))], 'mu': [0]}
+    basis = {'x': [True for i in A[0]], 'w': [True for j in range(len(A))], 'v': [False for j in range(len(A[0]))],
+             'u': [False for j in range(len(A))], 'z1': [False for j in range(len(A[0]))],
+             'z2': [False for j in range(len(A[0]))], 'mu': [False]}
+    equations = generate_equations(A, B, C, P)
 
 
 if __name__ == "__main__":
-    # unittest.main()
-    pass
+    minimize_w([[2, 3, 1, 0], [1, 4, 0, 1]], [[5], [6]], [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+               [[-1], [-2], [0], [0]])

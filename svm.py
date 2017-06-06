@@ -180,7 +180,7 @@ class SVM:
 
     def __find_b(self) -> None:
         """
-        Private method finding the bias coefficient/
+        Private method finding the bias coefficient
         :return: None
         """
         for m, alpha in enumerate(self.results):

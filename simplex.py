@@ -1,95 +1,17 @@
 from itertools import filterfalse
-
 import utility
 
 
-def rearrange_equations(conditions):
-    for i, condition in enumerate(conditions):
-        if condition[len(condition) + i - len(conditions) - 1] == 0:
-            for j in range(i + 1, len(conditions)):
-                if conditions[j][len(condition) + i - len(conditions) - 1] != 0:
-                    conditions[j], conditions[i] = conditions[i], conditions[j]
-
-
-def check_for_maximum(vector):
-    for value in vector:
-        if value < 0:
-            return False
-    return True
-
-
-def find_not_negative_min(tau):
-    assert tau, list
-    min_value = max([max(i) for i in tau])
-    coordinates = (0, 0)
-    for i, vector in enumerate(tau):
-        for j, element in enumerate(vector):
-            if 0 < element:
-                min_value = element
-                coordinates = (i, j)
-                return min_value, coordinates
-
-
-def solve_simplex(function, conditions):  # depicted method I'll delete it later
-    assert function, list
-    assert conditions, list
-    if len(conditions) == 0:
-        raise ValueError("It is impossible to use the simplex method for unconditional minimization. "
-                         "Set the conditions or try another method")
-    length = len(conditions[0])
-    for condition in conditions:
-        if len(condition) != length:
-            raise ValueError("Conditions must be in canonic form")
-    if len(function) + 1 != length:
-        raise ValueError("Function must be in canonic form")
-    rearrange_equations(conditions)
-    equations = [condition[-(len(conditions) + 1):] for condition in conditions]
-    basis = utility.solve_crammer(equations)
-    basis_vectors = {i: len(condition) + i - len(conditions) - 1 for i, condition in enumerate(conditions)}
-    C = function[-len(conditions):]
-    decomposition_of_vectors = []
-    for i, k in enumerate(function):
-        Y = [condition[i] for condition in conditions]
-        decomposition_of_vectors.append(utility.multiply_vectors(C, Y) - k)
-    while not check_for_maximum(decomposition_of_vectors):
-        negative_variables = {}
-        for i, vector in enumerate(decomposition_of_vectors):
-            if vector < 0:
-                negative_variables[len(negative_variables)] = i
-        tau = []
-        for i, res in enumerate(basis):
-            line = []
-            for key in negative_variables:
-                if conditions[i][negative_variables[key]] == 0:
-                    line.append(-1)
-                else:
-                    line.append(res / conditions[i][negative_variables[key]])
-            tau.append(line)
-        minimum = find_not_negative_min(tau)
-        z = []
-        for i in range(len(tau[minimum[1][0]])):
-            z.append(-1 * tau[minimum[1][0]][i] * decomposition_of_vectors[negative_variables[i]])
-        basis_vectors[minimum[1][0]] = negative_variables[z.index(max(z))]
-        equations = [[condition[basis_vectors[key]] for key in sorted(basis_vectors)] for condition in conditions]
-        equations = [equation + [condition[-1]] for equation, condition in zip(equations, conditions)]
-        basis = utility.solve_crammer(equations)
-        for i in range(len(conditions)):
-            if i != minimum[1][0]:
-                mult = conditions[i][basis_vectors[minimum[1][0]]] / conditions[minimum[1][0]][basis_vectors[minimum[1][0]]];
-                for j in range(len(conditions[i])):
-                    conditions[i][j] -= conditions[minimum[1][0]][j] * mult
-        C = [function[basis_vectors[key]] for key in sorted(basis_vectors)]# function[-len(conditions):]
-        for i, k in enumerate(function):
-            Y = [condition[i] / condition[basis_vectors[n]] for n, condition in enumerate(conditions)]
-            decomposition_of_vectors[i] = utility.multiply_vectors(C, Y) - k
-        basis.sort()
-    result = [0 for i in range(len(conditions[0]) - 1)]
-    for key in basis_vectors:
-        result[basis_vectors[key]] = basis[key]
-    return result
-
-
-def calculate_basis(equations, basis):
+def calculate_basis(equations: list, basis: list) -> list:
+    """
+    Solves the system of equations relative to the basis
+    :param equations: The system of equations to solve
+    :param basis: The basis for which the systems will be solved
+    :return: Solution vector
+    :except AssertionError: wrong parameters type
+    """
+    assert equations, list
+    assert basis, list
     new_equations = [[] for equation in equations]
     for i in range(len(equations)):
         for j in basis:
@@ -98,7 +20,17 @@ def calculate_basis(equations, basis):
     return utility.solve_crammer(new_equations)
 
 
-def build_basis(equations, basis, k):
+def decompose_basis(equations: list, basis: list, k: int) -> list:
+    """
+    Decomposes the specified variable over the indicated basis in the system of linear equations
+    :param equations: system of linear equations in matrix form
+    :param basis: the basis on which the variable is decomposed
+    :param k: number of the variable for the expansion in the system of equations
+    :return: result of decomposition
+    :except AssertionError: wrong parameters type
+    """
+    assert equations, list
+    assert basis, list
     new_equations = [[] for equation in equations]
     for i in range(len(equations)):
         for j in basis:
@@ -107,15 +39,43 @@ def build_basis(equations, basis, k):
     return utility.solve_crammer(new_equations)
 
 
-def calculate(function, values):
+def calculate(function: list, values: list) -> list:
+    """
+    This function calculates a linear function for given values of the variables
+    :param function: vector of coefficients for a linear function
+    :param values: vector of variables values
+    :return: vector af results
+    :except AssertionError: wrong parameters type
+    :except ValueError: The number of variables and values are not the same
+    """
+    assert function, list
+    assert values, list
+    if len(function) != len(values):
+        raise ValueError("The number of variables and values must be the same")
     result = 0
     for i in range(len(function)):
         result += function[i] * values[i]
     return result
 
 
-def simplex_method(function, conditions, basis=None, minimization=True, excluded=None, conditional=False, n=0):
-    if basis is None:  # build initial basis
+def simplex_method(function: list, conditions: list, basis: list=None, minimization: bool=True, excluded: list=None,
+                   conditional: bool=False, n: int=0) -> (list, float, list):
+    """
+    Minimizes or maximizes the selected linear function of the simplex method. An initial basis can be given,
+    variables that can not be included in the basis and / or pairs of variables
+    that can not be in the basis simultaneously.
+    :param function: coefficient vector for the original function in standard form
+    :param conditions: linear system of conditions in the standard matrix form
+    :param basis: vector of numbers of basic variables
+    :param minimization: flag. True if the function is minimizing, false if maximizing.
+    :param excluded: vector of variable numbers that can not be included in the basis
+    :param conditional: true, if one can not simultaneously include in the basis i and i + n, i=0..n, else otherwise
+    :param n: the point of symmetry with respect to which the variables can not be included simultaneously
+    :return: return tuple of 3 values. First value result vector, containing variables after minimization/maximization
+    :return: Second value is function value. Third value is final basis.
+    """
+    #  If basis is empty add last n variables to basis
+    if basis is None:
         basis = []
     if excluded is None:
         excluded = []
@@ -126,8 +86,11 @@ def simplex_method(function, conditions, basis=None, minimization=True, excluded
         if offset not in basis:
             basis.append(offset)
         offset -= 1
+    #  While function not minimal / maximal
     while True:
-        decompositions = [build_basis(conditions, basis, i) for i in range(len(conditions[0]) - 1)]
+        #  Find the expansion of the variable in terms of the basis
+        decompositions = [decompose_basis(conditions, basis, i) for i in range(len(conditions[0]) - 1)]
+        #  Find the value of the basis variables
         basis_value = calculate_basis(conditions, basis)
         result = calculate(function,
                            [0 if i not in basis else basis_value[basis.index(i)] for i in range(len(function))])
@@ -137,6 +100,7 @@ def simplex_method(function, conditions, basis=None, minimization=True, excluded
             for i, value in enumerate(decomposition):
                 coefficient += function[basis[i]] * value
             coefficients.append(coefficient - function[j])
+        #  Determine which variable to include in the basis
         new_coefficients = [n for i, n in enumerate(coefficients) if i not in excluded]
         to_replace = max(new_coefficients) if minimization else min(new_coefficients)
         if (to_replace <= 0 and minimization) or (to_replace >= 0 and not minimization):

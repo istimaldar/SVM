@@ -20,11 +20,11 @@ class SVM:
     @staticmethod
     def linear_kernel(X: list, Y: list, c: float=0, *p) -> float:
         """
-        This function implements linear kernel K(X, Y) = transpose(X) * Y + c
+        This method implements linear kernel K(X, Y) = transpose(X) * Y + c
         :param X: first vector
         :param Y: second vector
         :param c: coefficient c
-        :param p: other parameters, in case the function receives more
+        :param p: other parameters, in case the method receives more
         :return: result of kernel of current vectors
         """
         assert X, list
@@ -35,13 +35,13 @@ class SVM:
     @staticmethod
     def polynomial_kernel(X: list, Y: list, c: float=0, alpha: float=0, d: float=2, *p) -> float:
         """
-        This function implements polynomial kernel K(X, Y) =  (alpha * transpose(X) * Y + c) ** d
+        This method implements polynomial kernel K(X, Y) =  (alpha * transpose(X) * Y + c) ** d
         :param X: first vector
         :param Y: second vector
         :param c: coefficient c
         :param alpha: coefficient alpha
         :param d: coefficient d
-        :param p: other parameters, in case the function receives more
+        :param p: other parameters, in case the method receives more
         :return: result of kernel of current vectors
         """
         assert X, list
@@ -54,11 +54,11 @@ class SVM:
     @staticmethod
     def gaussian_kernel(X: list, Y: list, sigma: float=1, *p) -> float:
         """
-        This function implements gaussian kernel K(X, Y) =  exp(-(||X - Y|| ** 2) / (2 * sigma ** 2))
+        This method implements gaussian kernel K(X, Y) =  exp(-(||X - Y|| ** 2) / (2 * sigma ** 2))
         :param X: first vector
         :param Y: second vector
         :param sigma: coefficient sigma
-        :param p: other parameters, in case the function receives more
+        :param p: other parameters, in case the method receives more
         :return: result of kernel of current vectors
         """
         assert X, list
@@ -69,11 +69,11 @@ class SVM:
     @staticmethod
     def exponential_kernel(X: list, Y: list, sigma: float=1, *p) -> float:
         """
-        This function implements exponential kernel K(X, Y) =  exp(-(||X - Y||) / (2 * sigma ** 2))
+        This method implements exponential kernel K(X, Y) =  exp(-(||X - Y||) / (2 * sigma ** 2))
         :param X: first vector
         :param Y: second vector
         :param sigma: coefficient sigma
-        :param p: other parameters, in case the function receives more
+        :param p: other parameters, in case the method receives more
         :return: result of kernel of current vectors
         """
         assert X, list
@@ -84,11 +84,11 @@ class SVM:
     @staticmethod
     def laplacian_kernel(X: list, Y: list, sigma: float=1, *p) -> float:
         """
-        This function implements laplacian kernel K(X, Y) =  exp(-(||X - Y||) / sigma)
+        This method implements laplacian kernel K(X, Y) =  exp(-(||X - Y||) / sigma)
         :param X: first vector
         :param Y: second vector
         :param sigma: coefficient sigma
-        :param p: other parameters, in case the function receives more
+        :param p: other parameters, in case the method receives more
         :return: result of kernel of current vectors
         """
         assert X, list
@@ -134,7 +134,7 @@ class SVM:
 
     def build(self) -> None:
         """
-        This function builds svm and must be called before using the class
+        This method builds svm and must be called before using the class
         :return: None
         """
         for i in range(len(self.X)):
@@ -160,7 +160,7 @@ class SVM:
 
     def __minimize_lagrange(self) -> None:
         """
-        Private function minimizing the width of the space between the positive and negative classes,
+        Private method minimizing the width of the space between the positive and negative classes,
         using the method of Lagrange multipliers. Need to solve 3 ** number_of_input_vectors equations.
         Too slow on large data sets.
         :return: None
@@ -180,7 +180,7 @@ class SVM:
 
     def __find_b(self) -> None:
         """
-        Private function finding the bias coefficient/
+        Private method finding the bias coefficient/
         :return: None
         """
         for m, alpha in enumerate(self.results):

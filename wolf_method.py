@@ -3,12 +3,14 @@ This file implements Wolf method. Main function is wolf_method(..)
 """
 import simplex
 import typing
+
 Equations = typing.List[typing.Dict[str, typing.List[float]]]
 Equation = typing.Dict[str, typing.List[float]]
 Matrix = typing.List[typing.List[float]]
 Vector = typing.List[float]
 Variables = typing.List[str]
 Basis = typing.Dict[str, typing.List[float]]
+
 
 def generate_a(n: int) -> Matrix:
     """
@@ -64,7 +66,7 @@ def generate_p(n: int) -> Vector:
 
 def generate_equations(A: Matrix, B: Matrix, C: Matrix, P: Matrix) -> Equations:
     """
-    Generates a system of linear equations for the Wolff method
+    Generates a system of linear equations for the Wolf method
     :param A: matrix A for Wolf method
     :param B: vector B for Wolf method
     :param C: matrix C for Wolf method
@@ -81,7 +83,7 @@ def generate_equations(A: Matrix, B: Matrix, C: Matrix, P: Matrix) -> Equations:
     for i in range(len(C)):
         equation = {'x': C[i], 'w': [0 for j in range(len(A))], 'v': [-1 if i == j else 0 for j in range(len(C[i]))],
                     'u': [j for j in transpone_A[i]], 'z1': [1 if i == j else 0 for j in range(len(C[i]))],
-                    'z2': [-1 if i == j else 0 for j in range(len(C[i]))], 'mup': P[i], 'result': [0]}
+                    'z2': [-1 if i == j else 0 for j in range(len(C[i]))], 'mup': [-e for e in P[i]], 'result': [0]}
         result.append(equation)
     return result
 
@@ -143,7 +145,22 @@ def generate_function(equation: Equation, variables: Variables, function_variabl
     return result
 
 
-#def build_excluded_array(equation: list, )
+def build_excluded_array(equation: Equation, variables: Variables, excluded: Variables) -> Vector:
+    """
+    This function constructs a vector of variables that must be excluded from the basis when minimizing
+    :param equation: map contains coefficients for variables and results
+    :param variables: list of the names of variables that must be included in the function
+    :param excluded: list of the names of variables that must not be included in the basis
+    :return: the vector of variables that must be excluded from the basis when minimizing
+    """
+    result = []
+    offset = 0
+    for variable in variables:
+        for i, coefficient in enumerate(equation[variable]):
+            if variable in excluded:
+                result.append(offset + i)
+        offset += len(equation[variable])
+    return result
 
 
 def array_to_basis(array: Vector, basis: Basis, variables: Variables) -> Basis:
@@ -153,7 +170,6 @@ def array_to_basis(array: Vector, basis: Basis, variables: Variables) -> Basis:
     :param basis: old basis
     :param variables: list of variables used to minimize
     :return: new basis
-
     """
     offset = 0
     for var in variables:
@@ -212,35 +228,35 @@ def update_basis_after_second_minimization(basis: Basis, equations: Equations) -
 
 def wolf_method(A: Matrix, B: Matrix, C: Matrix, P: Matrix):
     """
-
-    :param A:
-    :param B:
-    :param C:
-    :param P:
-    :return:
+    This function minimizes the quadratic function given by the matrices by the Wolff method
+    :param A: matrix A for Wolf method
+    :param B: vector B for Wolf method
+    :param C: matrix C for Wolf method
+    :param P: vector P for Wolf method
+    :return: result of minimization
     """
-    n = len(A[0])
-    result = {'x': [0 for i in A[0]], 'w': [0 for j in range(len(A))], 'v': [0 for j in range(len(A[0]))],
-              'u': [0 for j in range(len(A))], 'z1': [0 for j in range(len(A[0]))],
-              'z2': [0 for j in range(len(A[0]))], 'mu': [0]}
     basis = {'x': [False for i in A[0]], 'w': [True for j in range(len(A))], 'v': [False for j in range(len(A[0]))],
              'u': [False for j in range(len(A))], 'z1': [True for j in range(len(A[0]))],
-             'z2': [False for j in range(len(A[0]))], 'mu': [False]}
+             'z2': [False for j in range(len(A[0]))], 'mup': [False]}
     equations = generate_equations(A, B, C, P)
-    conditions = equation_to_array(equations, ['x', 'w', 'z1', 'z2'])
-    function = generate_function(equations[0], ['x', 'w', 'z1', 'z2'], 'w')
-    basis_vector = basis_to_array(basis, ['x', 'w', 'z1', 'z2'])
-    variables, value, array_basis = simplex.simplex_method(function, conditions, basis_vector)
+    conditions = equation_to_array(equations, ['x', 'u', 'v', 'w', 'z1', 'z2', 'mup'])
+    function = generate_function(equations[0], ['x', 'u', 'v', 'w', 'z1', 'z2', 'mup'], 'w')
+    basis_vector = basis_to_array(basis, ['x', 'u', 'v', 'w', 'z1', 'z2', 'mup'])
+    excluded = build_excluded_array(equations[0], ['x', 'u', 'v', 'w', 'z1', 'z2', 'mup'], ['u', 'v', 'mup'])
+    variables, value, array_basis = simplex.simplex_method(function, conditions, basis_vector, True, excluded)
     basis, equations = update_basis_after_first_minimization(array_to_basis(array_basis, basis, ['x', 'w', 'z1', 'z2']),
                                                              equations)
-    conditions = equation_to_array(equations, ['x', 'u', 'v', 'z'])
-    function = generate_function(equations[0], ['x', 'u', 'v', 'z'], 'z')
-    variables, value, array_basis = simplex.simplex_method(function, conditions, basis_vector, True, None, True,
+    conditions = equation_to_array(equations, ['x', 'u', 'v', 'z', 'mup'])
+    function = generate_function(equations[0], ['x', 'u', 'v', 'z', 'mup'], 'z')
+    excluded = build_excluded_array(equations[0], ['x', 'u', 'v', 'z', 'mup'], ['mup'])
+    basis_vector = basis_to_array(basis, ['x', 'u', 'v', 'z', 'mup'])
+    variables, value, array_basis = simplex.simplex_method(function, conditions, basis_vector, True, excluded, True,
                                                            len(equations[0]['x']))
     basis, equations = update_basis_after_second_minimization(array_to_basis(array_basis, basis, ['x', 'u', 'v']),
                                                               equations)
     conditions = equation_to_array(equations, ['x', 'u', 'v', 'mup'])
     function = generate_function(equations[0], ['x', 'u', 'v', 'mup'], 'mup')
+    basis_vector = basis_to_array(basis, ['x', 'u', 'v', 'mup'])
     variables, value, array_basis = simplex.simplex_method(function, conditions, basis_vector, True, None, True,
                                                            len(equations[0]['x']))
     print(variables)

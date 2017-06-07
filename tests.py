@@ -81,10 +81,20 @@ class TestClass(unittest.TestCase):
                                                                        'z': [True, False], 'd': [False, False, False]})
 
     def test_remove_z(self):
-        self.assertEqual(wolf_method.update_basis_after_first_minimization({'z1': [True, True, False], 'z2': [False, False, True]},
-                                                                           [{'z1': [1, 0, 0], 'z2': [-1, 0, 0]}, {'z1': [0, 1, 0], 'z2': [0, -1, 0]},
-                                               {'z1': [0, 0, -1], 'z2': [0, 0, -1]}]),
+        self.assertEqual(wolf_method.update_basis_after_first_minimization({'z1': [True, True, False],
+                                                                            'z2': [False, False, True],
+                                                                            'w': [False]},
+                                                                           [{'z1': [1, 0, 0], 'z2': [-1, 0, 0],
+                                                                             'w': [False]},
+                                                                            {'z1': [0, 1, 0], 'z2': [0, -1, 0],
+                                                                             'w': [False]},
+                                                                            {'z1': [0, 0, -1], 'z2': [0, 0, -1],
+                                                                             'w': [False]}]),
                          ({'z': [True, True, True]}, [{'z': [1, 0, 0]}, {'z': [0, 1, 0]}, {'z': [0, 0, -1]}]))
+
+    def test_build_excluded_array(self):
+        self.assertEqual(wolf_method.build_excluded_array({'x': [1, 2, 3, 4], 'w': [1, 4, 6, 7], 'q': [8, 8, 8]},
+                                                          ['x', 'w', 'q'], ['q']), [8, 9, 10])
 
 
 if __name__ == "__main__":

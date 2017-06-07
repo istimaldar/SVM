@@ -1,11 +1,16 @@
 """
 This file implements Wolf method. Main function is wolf_method(..)
 """
-from itertools import filterfalse
 import simplex
+import typing
+Equations = typing.List[typing.Dict[str, typing.List[float]]]
+Equation = typing.Dict[str, typing.List[float]]
+Matrix = typing.List[typing.List[float]]
+Vector = typing.List[float]
+Variables = typing.List[str]
+Basis = typing.Dict[str, typing.List[float]]
 
-
-def generate_a(n: int) -> list:
+def generate_a(n: int) -> Matrix:
     """
     This function generates a matrix A for the Wolf method
     :param n: number of x variables
@@ -32,7 +37,7 @@ def generate_a(n: int) -> list:
     return result
 
 
-def generate_b(n: int, C: float) -> list:
+def generate_b(n: int, C: float) -> Vector:
     """
     This function generates a vector B for the Wolf method
     :param n: number of x variables
@@ -48,7 +53,7 @@ def generate_b(n: int, C: float) -> list:
     return result
 
 
-def generate_p(n: int) -> list:
+def generate_p(n: int) -> Vector:
     """
     This function generates a vector P for the Wolf method
     :param n: number of x variables
@@ -57,7 +62,7 @@ def generate_p(n: int) -> list:
     return [1 for element in range(n)]
 
 
-def generate_equations(A: list, B: list, C: list, P: list) -> list:
+def generate_equations(A: Matrix, B: Matrix, C: Matrix, P: Matrix) -> Equations:
     """
     Generates a system of linear equations for the Wolff method
     :param A: matrix A for Wolf method
@@ -81,7 +86,7 @@ def generate_equations(A: list, B: list, C: list, P: list) -> list:
     return result
 
 
-def equation_to_array(equations: list, variables: list) -> list:
+def equation_to_array(equations: Equations, variables: Variables) -> Vector:
     """
     This function forms a matrix of conditions for the simplex method
     :param equations: list of maps contains coefficients for variables and results
@@ -101,7 +106,7 @@ def equation_to_array(equations: list, variables: list) -> list:
     return result
 
 
-def basis_to_array(basis: dict, variables: list) -> list:
+def basis_to_array(basis: Basis, variables: Variables) -> Vector:
     """
     This function forms a basis vector for the simplex method
     :param basis: map, contains True if variable is in basis and False otherwise
@@ -121,10 +126,10 @@ def basis_to_array(basis: dict, variables: list) -> list:
     return result
 
 
-def generate_function(equations: dict, variables: list, function_variable: str) -> list:
+def generate_function(equation: Equation, variables: Variables, function_variable: str) -> Vector:
     """
     Generates coefficients for a minimized function
-    :param equations: list of maps contains coefficients for variables and results
+    :param equation: list of maps contains coefficients for variables and results
     :param variables: list of the names of variables that must be included in the function
     :param function_variable: the variable on which the minimization takes place
     :return: coefficients for a minimized function
@@ -132,13 +137,16 @@ def generate_function(equations: dict, variables: list, function_variable: str) 
     result = []
     for var in variables:
         if var == function_variable:
-            result += [1 for element in equations[var]]
+            result += [1 for element in equation[var]]
         else:
-            result += [0 for element in equations[var]]
+            result += [0 for element in equation[var]]
     return result
 
 
-def array_to_basis(array: list, basis: dict, variables: list) -> dict:
+#def build_excluded_array(equation: list, )
+
+
+def array_to_basis(array: Vector, basis: Basis, variables: Variables) -> Basis:
     """
     This function translates the basis returned by the simplex method to a convenient form
     :param array: basis vector return simplex method
@@ -162,7 +170,7 @@ def array_to_basis(array: list, basis: dict, variables: list) -> dict:
     return basis
 
 
-def update_basis_after_first_minimization(basis: dict, equations: list) -> (dict, list):
+def update_basis_after_first_minimization(basis: Basis, equations: Equations) -> (Basis, Equations):
     """
     This function removes unused z and all w
     :param basis: old basis
@@ -187,7 +195,7 @@ def update_basis_after_first_minimization(basis: dict, equations: list) -> (dict
     return basis, equations
 
 
-def update_basis_after_second_minimization(basis: dict, equations: list) -> (dict, list):
+def update_basis_after_second_minimization(basis: Basis, equations: Equations) -> (Basis, Equations):
     """
     This function removes all z
     :param basis: old basis
@@ -202,7 +210,7 @@ def update_basis_after_second_minimization(basis: dict, equations: list) -> (dic
     return basis, equations
 
 
-def wolf_method(A: list, B: list, C: list, P: list):
+def wolf_method(A: Matrix, B: Matrix, C: Matrix, P: Matrix):
     """
 
     :param A:

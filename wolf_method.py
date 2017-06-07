@@ -68,15 +68,15 @@ def generate_equations(A: list, B: list, C: list, P: list) -> list:
     """
     result = []
     for i in range(len(A)):
-        equation = {'x': A[i], 'w': [1 for j in range(len(A))], 'v': [0 for j in range(len(A[i]))],
+        equation = {'x': A[i], 'w': [1 if i == j else 0 for j in range(len(A))], 'v': [0 for j in range(len(A[i]))],
                     'u': [0 for j in range(len(A))], 'z1': [0 for j in range(len(A[i]))],
                     'z2': [0 for j in range(len(A[i]))], 'mup': [0], 'result': B[i]}
         result.append(equation)
     transpone_A = [list(i) for i in zip(*A)]
     for i in range(len(C)):
-        equation = {'x': C[i], 'w': [0 for j in range(len(A))], 'v': [-1 for j in range(len(C[i]))],
-                    'u': [j for j in transpone_A[i]], 'z1': [1 for j in range(len(C[i]))],
-                    'z2': [-1 for j in range(len(C[i]))], 'mup': P[i], 'result': [0]}
+        equation = {'x': C[i], 'w': [0 for j in range(len(A))], 'v': [-1 if i == j else 0 for j in range(len(C[i]))],
+                    'u': [j for j in transpone_A[i]], 'z1': [1 if i == j else 0 for j in range(len(C[i]))],
+                    'z2': [-1 if i == j else 0 for j in range(len(C[i]))], 'mup': P[i], 'result': [0]}
         result.append(equation)
     return result
 
@@ -93,13 +93,15 @@ def equation_to_array(equations: list, variables: list) -> list:
     assert variables, list
     result = []
     for equation in equations:
+        temp = []
         for variable in variables:
-            result += equation[variable]
-        result += equation.get('result', [])
+            temp += equation[variable]
+        temp += equation.get('result', [])
+        result.append(temp)
     return result
 
 
-def basis_to_array(basis: map, variables: list) -> list:
+def basis_to_array(basis: dict, variables: list) -> list:
     """
     This function forms a basis vector for the simplex method
     :param basis: map, contains True if variable is in basis and False otherwise
@@ -107,28 +109,138 @@ def basis_to_array(basis: map, variables: list) -> list:
     :return: the basis vector for the simplex method
     :except AssertionError: wrong parameters type
     """
-    assert basis, map
+    assert basis, dict
     assert variables, list
     start = 0
     result = []
     for variable in variables:
         for i, value in enumerate(basis[variable]):
             if value:
-               result.append(start + i)
+                result.append(start + i)
         start += len(basis[variable])
     return result
 
 
-def wolf_method(A, B, C, P):
+def generate_function(equations: dict, variables: list, function_variable: str) -> list:
+    """
+    Generates coefficients for a minimized function
+    :param equations: list of maps contains coefficients for variables and results
+    :param variables: list of the names of variables that must be included in the function
+    :param function_variable: the variable on which the minimization takes place
+    :return: coefficients for a minimized function
+    """
+    result = []
+    for var in variables:
+        if var == function_variable:
+            result += [1 for element in equations[var]]
+        else:
+            result += [0 for element in equations[var]]
+    return result
+
+
+def array_to_basis(array: list, basis: dict, variables: list) -> dict:
+    """
+    This function translates the basis returned by the simplex method to a convenient form
+    :param array: basis vector return simplex method
+    :param basis: old basis
+    :param variables: list of variables used to minimize
+    :return: new basis
+
+    """
+    offset = 0
+    for var in variables:
+        for i in range(len(basis[var])):
+            if offset + i in array:
+                basis[var][i] = True
+            else:
+                basis[var][i] = False
+        offset += len(basis[var])
+    for key in basis:
+        if key not in variables:
+            for i in range(len(basis[key])):
+                basis[key][i] = False
+    return basis
+
+
+def update_basis_after_first_minimization(basis: dict, equations: list) -> (dict, list):
+    """
+    This function removes unused z and all w
+    :param basis: old basis
+    :param equations: old equations
+    :return: tuple of two params. First param is new basis. Second param is new equations.
+    """
+    for i, equation in enumerate(equations):
+        z = []
+        for condition, z1, z2 in zip(basis['z1'], equation['z1'], equation['z2']):
+            if condition:
+                z.append(z1)
+            else:
+                z.append(z2)
+        del equations[i]['z1']
+        del equations[i]['z2']
+        del equations[i]['w']
+        equations[i]['z'] = z
+    del basis['z1']
+    basis['z'] = [True for element in basis['z2']]
+    del basis['z2']
+    del basis['w']
+    return basis, equations
+
+
+def update_basis_after_second_minimization(basis: dict, equations: list) -> (dict, list):
+    """
+    This function removes all z
+    :param basis: old basis
+    :param equations: old equations
+    :return: tuple of two params. First param is new basis. Second param is new equations.
+    """
+    for equation in equations:
+        assert equation, dict
+    for i in range(len(equations)):
+        del equations[i]['z']
+    del basis['z']
+    return basis, equations
+
+
+def wolf_method(A: list, B: list, C: list, P: list):
+    """
+
+    :param A:
+    :param B:
+    :param C:
+    :param P:
+    :return:
+    """
     n = len(A[0])
     result = {'x': [0 for i in A[0]], 'w': [0 for j in range(len(A))], 'v': [0 for j in range(len(A[0]))],
               'u': [0 for j in range(len(A))], 'z1': [0 for j in range(len(A[0]))],
               'z2': [0 for j in range(len(A[0]))], 'mu': [0]}
-    basis = {'x': [True for i in A[0]], 'w': [True for j in range(len(A))], 'v': [False for j in range(len(A[0]))],
-             'u': [False for j in range(len(A))], 'z1': [False for j in range(len(A[0]))],
+    basis = {'x': [False for i in A[0]], 'w': [True for j in range(len(A))], 'v': [False for j in range(len(A[0]))],
+             'u': [False for j in range(len(A))], 'z1': [True for j in range(len(A[0]))],
              'z2': [False for j in range(len(A[0]))], 'mu': [False]}
     equations = generate_equations(A, B, C, P)
+    conditions = equation_to_array(equations, ['x', 'w', 'z1', 'z2'])
+    function = generate_function(equations[0], ['x', 'w', 'z1', 'z2'], 'w')
+    basis_vector = basis_to_array(basis, ['x', 'w', 'z1', 'z2'])
+    variables, value, array_basis = simplex.simplex_method(function, conditions, basis_vector)
+    basis, equations = update_basis_after_first_minimization(array_to_basis(array_basis, basis, ['x', 'w', 'z1', 'z2']),
+                                                             equations)
+    conditions = equation_to_array(equations, ['x', 'u', 'v', 'z'])
+    function = generate_function(equations[0], ['x', 'u', 'v', 'z'], 'z')
+    variables, value, array_basis = simplex.simplex_method(function, conditions, basis_vector, True, None, True,
+                                                           len(equations[0]['x']))
+    basis, equations = update_basis_after_second_minimization(array_to_basis(array_basis, basis, ['x', 'u', 'v']),
+                                                              equations)
+    conditions = equation_to_array(equations, ['x', 'u', 'v', 'mup'])
+    function = generate_function(equations[0], ['x', 'u', 'v', 'mup'], 'mup')
+    variables, value, array_basis = simplex.simplex_method(function, conditions, basis_vector, True, None, True,
+                                                           len(equations[0]['x']))
+    print(variables)
 
 
 if __name__ == "__main__":
-    pass
+    wolf_method([[2, 3, 1, 0], [1, 4, 0, 1]], [[6], [5]],
+                [[0.5, 0, 0, 0], [0, 0.5, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                [[-1], [-2], [0], [0]])
+    print(0.5 * (1.8 ** 2) + 0.5 * (0.8 ** 2) - 1.8 - 1.6)
+    print(0.5 * (0.55555 ** 2) + 0.5 * (1.1111 ** 2) - 0.555555 - 2.222)

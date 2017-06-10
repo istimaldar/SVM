@@ -186,6 +186,22 @@ def array_to_basis(array: Vector, basis: Basis, variables: Variables) -> Basis:
     return basis
 
 
+def array_to_results(array: Vector, variables: Variables, result: Equation) -> Equation:
+    """
+
+    :param result:
+    :param array:
+    :param variables:
+    :return:
+    """
+    offset = 0
+    for key in variables:
+        for i in range(len(result[key])):
+            result[key][i] = array[offset + i]
+        offset += len(result[key])
+    return result
+
+
 def update_basis_after_first_minimization(basis: Basis, equations: Equations) -> (Basis, Equations):
     """
     This function removes unused z and all w
@@ -235,6 +251,10 @@ def wolf_method(A: Matrix, B: Matrix, C: Matrix, P: Matrix):
     :param P: vector P for Wolf method
     :return: result of minimization
     """
+    result = {'x': [0 for i in A[0]], 'w': [0 for j in range(len(A))], 'v': [0 for j in range(len(A[0]))],
+              'u': [0 for j in range(len(A))], 'z1': [0 for j in range(len(A[0]))],
+              'z2': [0 for j in range(len(A[0]))], 'mup': [0]}
+    equations = generate_equations(A, B, C, P)
     basis = {'x': [False for i in A[0]], 'w': [True for j in range(len(A))], 'v': [False for j in range(len(A[0]))],
              'u': [False for j in range(len(A))], 'z1': [True for j in range(len(A[0]))],
              'z2': [False for j in range(len(A[0]))], 'mup': [False]}
@@ -244,6 +264,7 @@ def wolf_method(A: Matrix, B: Matrix, C: Matrix, P: Matrix):
     basis_vector = basis_to_array(basis, ['x', 'u', 'v', 'w', 'z1', 'z2', 'mup'])
     excluded = build_excluded_array(equations[0], ['x', 'u', 'v', 'w', 'z1', 'z2', 'mup'], ['u', 'v', 'mup'])
     variables, value, array_basis = simplex.simplex_method(function, conditions, basis_vector, True, excluded)
+    print(array_to_results(variables, ['x', 'u', 'v', 'w', 'z1', 'z2', 'mup'], result))
     basis, equations = update_basis_after_first_minimization(array_to_basis(array_basis, basis, ['x', 'w', 'z1', 'z2']),
                                                              equations)
     conditions = equation_to_array(equations, ['x', 'u', 'v', 'z', 'mup'])

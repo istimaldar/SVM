@@ -1,3 +1,4 @@
+import time
 from itertools import filterfalse
 import utility
 
@@ -88,6 +89,7 @@ def simplex_method(function: list, conditions: list, basis: list=None, minimizat
         offset -= 1
     #  While function not minimal / maximal
     while True:
+        time_s = time.time()
         #  Find the expansion of the variable in terms of the basis
         decompositions = [decompose_basis(conditions, basis, i) for i in range(len(conditions[0]) - 1)]
         #  Find the value of the basis variables
@@ -122,5 +124,6 @@ def simplex_method(function: list, conditions: list, basis: list=None, minimizat
                     to_replace = basis_value[i] / coefficient
                     string = i
         basis[string] = column
+
     basis_value = calculate_basis(conditions, basis)
     return [0 if i not in basis else basis_value[basis.index(i)] for i in range(len(function))], result, basis

@@ -1,10 +1,13 @@
 """
 This file implements the basic logic of the operation of the support vector machine
 """
-import copy
 from math import exp
+
 import matplotlib.pyplot as plt
+
 import utility
+
+import minimization
 
 LINEAR = "linear"
 POLYNOMIAL = "polynomial"
@@ -155,7 +158,8 @@ class SVM:
             result = 1
             self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
             self.C.append(equation)
-        self.__minimize_lagrange()
+        #  self.__minimize_lagrange()
+        self.results = minimization.minimize(self.get_C(), len(self.X), self.Y, self.c)
         self.__find_b()
 
     def __minimize_lagrange(self) -> None:
@@ -251,3 +255,9 @@ class SVM:
 
     def get_C(self):
         return self.C
+
+
+if __name__ == "__main__":
+    machine = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 5)
+    machine.build()
+    machine.draw_plots()

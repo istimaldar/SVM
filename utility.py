@@ -149,7 +149,6 @@ def crammer_matrix(X: list, j: int) -> list:
         result.append(temp)
     return result
 
-
 def crammer_main_matrix(X: list) -> list:
     """
     Function returns the main matrix of the cramer

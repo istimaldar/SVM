@@ -17,7 +17,7 @@ class TestClass(unittest.TestCase):
 
     def test_A_svm(self):
         machine = svm.SVM(svm.POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 1)
-        machine.build()
+        machine.train()
         self.assertEqual(machine.classify([-1, -1]), -1)
         self.assertEqual(machine.classify([-1, 1]), 1)
         self.assertEqual(machine.classify([1, -1]), 1)
@@ -25,12 +25,12 @@ class TestClass(unittest.TestCase):
 
     def test_b_svm(self):
         machine = svm.SVM(svm.POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 1)
-        machine.build()
+        machine.train()
         self.assertEqual(machine.get_C(), [[9, -1, -1, 1], [-1, 9, 1, -1], [-1, 1, 9, -1], [1, -1, -1, 9]])
 
     def test_simplest_b(self):
         machine = svm.SVM(svm.POLYNOMIAL, [1, 1, 2], [[-1, -1], [1, 1]], [-1, 1], 1)
-        machine.build()
+        machine.train()
         self.assertEqual(machine.get_C(), [[9, -1], [-1, 9]])
 
     def test_A(self):

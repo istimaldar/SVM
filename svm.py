@@ -9,103 +9,35 @@ import utility
 
 import minimization
 
-LINEAR = "linear"
-POLYNOMIAL = "polynomial"
-GAUSSIAN = "gaussian"
-EXPONENTIAL = "exponential"
-LAPLICAN = "laplacian"
+from kernels import *
 
 
 class SVM:
     """
     This class implements the basic logic of SVM
     """
-    @staticmethod
-    def linear_kernel(X: list, Y: list, c: float=0, *p) -> float:
-        """
-        This method implements linear kernel K(X, Y) = transpose(X) * Y + c
-        :param X: first vector
-        :param Y: second vector
-        :param c: coefficient c
-        :param p: other parameters, in case the method receives more
-        :return: result of kernel of current vectors
-        """
-        assert X, list
-        assert Y, list
-        assert c, float
-        return utility.multiply_vector(X, Y) + c
-
-    @staticmethod
-    def polynomial_kernel(X: list, Y: list, c: float=0, alpha: float=0, d: float=2, *p) -> float:
-        """
-        This method implements polynomial kernel K(X, Y) =  (alpha * transpose(X) * Y + c) ** d
-        :param X: first vector
-        :param Y: second vector
-        :param c: coefficient c
-        :param alpha: coefficient alpha
-        :param d: coefficient d
-        :param p: other parameters, in case the method receives more
-        :return: result of kernel of current vectors
-        """
-        assert X, list
-        assert Y, list
-        assert c, float
-        assert alpha, float
-        assert d, float
-        return (utility.multiply_vector([alpha * x for x in X], Y) + c) ** d
-
-    @staticmethod
-    def gaussian_kernel(X: list, Y: list, sigma: float=1, *p) -> float:
-        """
-        This method implements gaussian kernel K(X, Y) =  exp(-(||X - Y|| ** 2) / (2 * sigma ** 2))
-        :param X: first vector
-        :param Y: second vector
-        :param sigma: coefficient sigma
-        :param p: other parameters, in case the method receives more
-        :return: result of kernel of current vectors
-        """
-        assert X, list
-        assert Y, list
-        assert sigma, float
-        return exp(-(utility.euclidean_distance(X, Y) ** 2) / (2 * (sigma ** 2)))
-
-    @staticmethod
-    def exponential_kernel(X: list, Y: list, sigma: float=1, *p) -> float:
-        """
-        This method implements exponential kernel K(X, Y) =  exp(-(||X - Y||) / (2 * sigma ** 2))
-        :param X: first vector
-        :param Y: second vector
-        :param sigma: coefficient sigma
-        :param p: other parameters, in case the method receives more
-        :return: result of kernel of current vectors
-        """
-        assert X, list
-        assert Y, list
-        assert sigma, float
-        return exp(-(utility.euclidean_distance(X, Y)) / (2 * (sigma ** 2)))
-
-    @staticmethod
-    def laplacian_kernel(X: list, Y: list, sigma: float=1, *p) -> float:
-        """
-        This method implements laplacian kernel K(X, Y) =  exp(-(||X - Y||) / sigma)
-        :param X: first vector
-        :param Y: second vector
-        :param sigma: coefficient sigma
-        :param p: other parameters, in case the method receives more
-        :return: result of kernel of current vectors
-        """
-        assert X, list
-        assert Y, list
-        assert sigma, float
-        return exp(-(utility.euclidean_distance(X, Y)) / sigma)
 
     kernel_types = {"linear": linear_kernel, "polynomial": polynomial_kernel, "gaussian": gaussian_kernel,
                     "exponential": exponential_kernel, "laplacian": laplacian_kernel}
 
-    def __init__(self, kernel_type: str, params: list, X: list, Y: list, c: float):
+    def __init__(self):
         """
         SVM constructor.
         WARNING! The constructor call will not prepare svm for usage. You should call build()
+        """
+        self.X = None
+        self.Y = None
+        self.b = 0
+        self.params = None
+        self.kernel = lambda *p: exec('raise ValueError("No kernel is defined")')
+        self.c = None
+        self.matrix = []
+        self.C = []
+        self.results = []
+
+    def train(self, kernel_type: str, params: list, X: list, Y: list, c: float) -> None:
+        """
+        This method builds svm and must be called before using the class
         :param kernel_type: name of kernel type. The constants defined in svm namespace must be used.
         :param params: params for kernel
         :param X: input vectors set
@@ -113,6 +45,7 @@ class SVM:
         :param c: param for svm
         :except AssertionError: raises if params has wrong type
         :except ValueError: raises if params has wrong values
+        :return: None
         """
         assert X, list
         for x in X:
@@ -127,19 +60,8 @@ class SVM:
                 raise ValueError("Y should contains only 1 and -1")
         self.X = X
         self.Y = Y
-        self.b = 0
         self.params = params
-        self.kernel = SVM.kernel_types[kernel_type].__func__
-        self.c = c
-        self.matrix = []
-        self.C = []
-        self.results = []
-
-    def build(self) -> None:
-        """
-        This method builds svm and must be called before using the class
-        :return: None
-        """
+        self.kernel = SVM.kernel_types[kernel_type]
         for i in range(len(self.X)):
             alpha = {}
             equation = []
@@ -158,7 +80,8 @@ class SVM:
             result = 1
             self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
             self.C.append(equation)
-        #  self.__minimize_lagrange()
+        self.c = c
+        # self.__minimize_lagrange()
         self.results = minimization.minimize(self.get_C(), len(self.X), self.Y, self.c)
         self.__find_b()
 
@@ -207,6 +130,17 @@ class SVM:
             return -1
         return 1
 
+    def get_distance(self, vector: list) -> float:
+        """
+        This method calculates the distance from the point to the reference hyperplane
+        :param vector: input sample
+        :return: distance from the point to the reference hyperplane
+        """
+        result = 0
+        for i in range(len(self.results)):
+            result += self.results[i] * self.Y[i] * self.kernel(self.X[i], vector, *self.params) + self.b
+        return result
+
     def draw_plots(self) -> None:
         """
         Draws a graph on which the points are located. Works only for two-dimensional space.
@@ -215,7 +149,7 @@ class SVM:
         """
         if len(self.X[0]) > 2:
             raise ValueError("Only 2d plots is currently supported.")
-        plot_data = {"positive": {"x": [], "y": []}, "negative": {"x" :[], "y": []}}
+        plot_data = {"positive": {"x": [], "y": []}, "negative": {"x": [], "y": []}}
         for x in self.X:
             if self.classify(x) == 1:
                 plot_data["positive"]["x"].append(x[0])
@@ -240,24 +174,11 @@ class SVM:
         plt.axis(borders)
         plt.show()
 
-    def check_defines(self):
-        """
-        Will be implemented in future versions
-        :return: None
-        """
-        result = 0
-        for i in range(len(self.X)):
-            for j in range(len(self.X)):
-                result += self.Y[i] * self.Y[j] * self.kernel(self.X[i], self.X[j], *self.params)
-        if result <= 0:
-            raise ValueError("The Wolff method for these values is too complicated to compute and therefore will be"
-                             " implemented later")
-
     def get_C(self):
         return self.C
 
 
 if __name__ == "__main__":
-    machine = SVM(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 5)
-    machine.build()
+    machine = SVM()
+    machine.train(POLYNOMIAL, [1, 1, 2], [[-1, -1], [-1, 1], [1, -1], [1, 1]], [-1, 1, 1, -1], 5)
     machine.draw_plots()

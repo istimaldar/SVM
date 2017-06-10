@@ -2,6 +2,7 @@
 This file implements the basic logic of the operation of the support vector machine
 """
 from math import exp
+from typing import TypeVar
 
 import matplotlib.pyplot as plt
 
@@ -35,7 +36,7 @@ class SVM:
         self.C = []
         self.results = []
 
-    def train(self, kernel_type: str, params: list, X: list, Y: list, c: float) -> None:
+    def train(self, kernel_type: str, params: list, X: list, Y: list, c: float):
         """
         This method builds svm and must be called before using the class
         :param kernel_type: name of kernel type. The constants defined in svm namespace must be used.
@@ -45,7 +46,7 @@ class SVM:
         :param c: param for svm
         :except AssertionError: raises if params has wrong type
         :except ValueError: raises if params has wrong values
-        :return: None
+        :return: SVM after training
         """
         assert X, list
         for x in X:
@@ -63,47 +64,15 @@ class SVM:
         self.params = params
         self.kernel = SVM.kernel_types[kernel_type]
         for i in range(len(self.X)):
-            alpha = {}
             equation = []
             for j in range(len(self.X)):
                 data = self.Y[i] * self.Y[j] * self.kernel(self.X[i], self.X[j], *self.params)
                 equation.append(data)
-                alpha[j] = data
-            h = {0: self.Y[i]}
-            for j in range(1, 2 * len(self.X) + 1):
-                if j == i * 2 + 1:
-                    h[j] = -1
-                elif j == i * 2 + 2:
-                    h[j] = 1
-                else:
-                    h[j] = 0
-            result = 1
-            self.matrix.append({"alpha": alpha, "h": h, "result": result, "answer": {"alpha": {}, "h": {}}})
             self.C.append(equation)
         self.c = c
-        # self.__minimize_lagrange()
-        self.results = minimization.minimize(self.get_C(), len(self.X), self.Y, self.c)
+        self.results = minimization.minimize(self.C, len(self.X), self.Y, self.c)
         self.__find_b()
-
-    def __minimize_lagrange(self) -> None:
-        """
-        Private method minimizing the width of the space between the positive and negative classes,
-        using the method of Lagrange multipliers. Need to solve 3 ** number_of_input_vectors equations.
-        Too slow on large data sets.
-        :return: None
-        :except ValueError: data can't be separated using current kernel. Try to use other kernels.
-        """
-        crammer_matrix = []
-        for equasion in self.matrix:
-            crammer_line = []
-            for value in sorted(equasion["alpha"]):
-                crammer_line.append(equasion["alpha"][value])
-            crammer_line.append(equasion["result"])
-            crammer_matrix.append(crammer_line)
-        try:
-            self.results = utility.solve_crammer(crammer_matrix)
-        except ZeroDivisionError:
-            raise ValueError("Error this data set is not lineraly separable in z-space. Try to use other kernel")
+        return self
 
     def __find_b(self) -> None:
         """
@@ -173,9 +142,6 @@ class SVM:
         ]
         plt.axis(borders)
         plt.show()
-
-    def get_C(self):
-        return self.C
 
 
 if __name__ == "__main__":

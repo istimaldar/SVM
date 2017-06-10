@@ -2,7 +2,6 @@
 import quadprog
 import typing
 import numpy
-import sys
 
 Equations = typing.List[typing.Dict[str, typing.List[float]]]
 Equation = typing.Dict[str, typing.List[float]]

@@ -1,3 +1,6 @@
+"""
+This file contains functions that are kernels
+"""
 from math import exp
 
 import utility

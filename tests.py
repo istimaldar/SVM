@@ -18,5 +18,8 @@ class TestClass(unittest.TestCase):
         machine = svm.SVM().train(svm.POLYNOMIAL, [1, 1, 2], [[-1, -1], [1, 1]], [-1, 1], 1)
         self.assertEqual(machine.C, [[9, -1], [-1, 9]])
 
+    def test_wrong(self):
+        self.assertEqual(1, 2)
+
 if __name__ == "__main__":
     unittest.main()

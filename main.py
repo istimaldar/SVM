@@ -18,18 +18,24 @@ if __name__ == '__main__':
             if t == 55:
                 break
             t += 1
-            with open('diagnoses/{}'.format(name), 'w') as f:
-                f.write(str(int(random.random() * 40)))
             with open('train_data/{}'.format(name), 'rb') as f:
                 X.append(pickle.load(f))
             with open('diagnoses/{}'.format(name), 'r') as f:
                 data = f.readline().rstrip()
                 Y.append(int(data))
-        sigma = random.random() * 10
-        C = random.random() * 300
-        machine.train(55, GAUSSIAN, [sigma], X, Y, C)
+        sigma = 2
+        C = 100
+        machine.train(40, GAUSSIAN, [sigma], X, Y, C)
         wrong = 0
-        for x in range(55):
-            if machine.classify(X[x]) != Y[x]:
+        X_n = []
+        Y_n = []
+        for name in [f for f in os.listdir('train_data/') if isfile(join('train_data/', f))]:
+            with open('train_data/{}'.format(name), 'rb') as f:
+                X_n.append(pickle.load(f))
+            with open('diagnoses/{}'.format(name), 'r') as f:
+                data = f.readline().rstrip()
+                Y_n.append(int(data))
+        for x, y in zip(X_n, Y_n):
+            if machine.classify(x) != y:
                 wrong += 1
         print(wrong / 72, sigma, C)

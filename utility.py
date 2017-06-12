@@ -36,7 +36,7 @@ def euclidean_distance(X: list, Y: list) -> float:
     assert Y, list
     if len(X) != len(Y):
         raise ValueError("X and Y should be the same size")
-    vector = [(x - y) ** 2 for x, y in (X, Y)]
+    vector = [(x - y) ** 2 for x, y in zip(X, Y)]
     return sum(vector) ** 0.5
 
 
@@ -58,7 +58,7 @@ def solve_gauss_jordan(X: list) -> list:
         #  Set main diagonal element to 1
         for j in range(i, len(matrix[i])):
             matrix[i][j] /= mul
-        #  Set elements to the left of the main diagonal to 0
+        # Set elements to the left of the main diagonal to 0
         for k in range(i + 1, len(matrix)):
             mul = matrix[k][i]
             result = 0
@@ -149,6 +149,7 @@ def crammer_matrix(X: list, j: int) -> list:
         result.append(temp)
     return result
 
+
 def crammer_main_matrix(X: list) -> list:
     """
     Function returns the main matrix of the cramer
@@ -162,7 +163,7 @@ def crammer_main_matrix(X: list) -> list:
         assert x, list
         if len(x) != len(X) + 1:
             raise ValueError("Wrong matrix size")
-    #  Cuts the last column of the matrix
+    # Cuts the last column of the matrix
     return [x[:-1] for x in X]
 
 
@@ -188,3 +189,9 @@ def solve_crammer(X: list) -> list:
     for i in range(len(X)):
         result.append(determinant(crammer_matrix(X, i)) / det)
     return result
+
+
+def get_ev_and_dispersion(data):
+    ev = sum(data) / len(data)
+    dispersion = sum([(x - ev) ** 2 for x in data]) / len(data)
+    return ev, dispersion
